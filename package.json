@@ -3,6 +3,7 @@
   "dependencies": {},
   "devDependencies": {
     "@types/jest": "*",
+    "coveralls": "*",
     "jest": "*",
     "redux": "*",
     "ts-jest": "*",
@@ -19,6 +20,7 @@
   "repository": "https://github.com/protoman92/javascript-helper.git",
   "resolutions": {
     "@types/jest": "26.0.20",
+    "coveralls": "3.1.0",
     "jest": "26.6.0",
     "redux": "4.0.5",
     "ts-essentials": "7.0.1",
@@ -29,6 +31,7 @@
     "webpack-merge": "4.2.2"
   },
   "scripts": {
+    "coveralls": "coveralls < coverage/lcov.info",
     "test": "jest"
   },
   "version": "1.0.0"

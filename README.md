@@ -1,5 +1,10 @@
 # redux-toolkit
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.org/protoman92/redux-toolkit.svg?branch=master)](https://travis-ci.org/protoman92/redux-toolkit)
+[![Coverage Status](https://coveralls.io/repos/github/protoman92/redux-toolkit/badge.svg?branch=master)](https://coveralls.io/github/protoman92/redux-toolkit?branch=master)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+
 Not to be confused with the official [redux-toolkit](https://github.com/reduxjs/redux-toolkit).
 
 This library is relatively unopinionated about your specific Redux setup. It
