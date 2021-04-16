@@ -155,7 +155,7 @@ describe("Redux helpers", () => {
   it("Settable property helper for object state should work correctly", async () => {
     // Setup
     interface State {
-      property?: { a: string; b?: string };
+      property?: { a: string; b?: number };
     }
 
     let state: State | undefined = {};
@@ -181,6 +181,14 @@ describe("Redux helpers", () => {
     );
 
     expect(state?.property).toEqual({});
+
+    // When && Then 3
+    state = helper.reducer(
+      state!,
+      helper.actionCreators.Object_merge_property_property({ b: 100 })
+    );
+
+    expect(state?.property).toEqual({ b: 100 });
   });
 
   it("Combining reducers should work", () => {

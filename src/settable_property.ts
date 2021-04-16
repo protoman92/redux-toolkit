@@ -114,6 +114,21 @@ type ObjectDeletePropertyAction<
     }>
   : NoopAction<ActionPrefix>;
 
+type ObjectMergePropertyAction<
+  State,
+  StateKey extends keyof State,
+  ActionPrefix extends string
+> = State[StateKey] extends CompatibleObject<string, unknown>
+  ? Readonly<
+      {
+        type: `${ActionPrefix}_object_merge_property_${Extract<
+          StateKey,
+          string
+        >}`;
+      } & Partial<State[StateKey]>
+    >
+  : NoopAction<ActionPrefix>;
+
 type ObjectSetPropertyAction<
   State,
   StateKey extends keyof State,
@@ -187,6 +202,11 @@ type SettablePropertyHelper<
                 key: K
               ) => ObjectDeletePropertyAction<State, StateKey, ActionPrefix>;
             } &
+              {
+                [x in `Object_merge_property_${Extract<StateKey, string>}`]: (
+                  obj: Partial<O>
+                ) => ObjectMergePropertyAction<State, StateKey, ActionPrefix>;
+              } &
               {
                 [x in `Object_set_property_${Extract<StateKey, string>}`]: <
                   K extends keyof O
@@ -298,6 +318,10 @@ export function createSettablePropertyHelper<
               key,
               type: `${actionPrefix}_object_delete_property_${stateKey}`,
             }),
+            [`Object_merge_property_${stateKey}`]: (obj: object) => ({
+              ...obj,
+              type: `${actionPrefix}_object_merge_property_${stateKey}`,
+            }),
             [`Object_set_property_${stateKey}`]: (
               key: string,
               value: unknown
@@ -402,6 +426,17 @@ export function createSettablePropertyHelper<
       ) {
         const objectStateValue = { ...state[stateKey] } as any;
         delete objectStateValue[action.key];
+        return { ...state, [stateKey]: objectStateValue };
+      }
+
+      if (
+        isOfType<ObjectMergePropertyAction<State, StateKey, ActionPrefix>>(
+          action,
+          `${actionPrefix}_object_merge_property_${stateKey}`
+        )
+      ) {
+        const { type, ...mergeObject } = action;
+        const objectStateValue = { ...state[stateKey], ...mergeObject } as any;
         return { ...state, [stateKey]: objectStateValue };
       }
 
