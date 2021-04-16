@@ -1,5 +1,5 @@
 import { Action } from "redux";
-import { ReducerWithOptionalReturn } from "./reducer";
+import { combineOptionalReducers, ReducerWithOptionalReturn } from "./reducer";
 import { shallowCloneArray } from "./utils";
 
 type Neverable<T> = T | null | undefined;
@@ -9,24 +9,38 @@ type CompatibleObject<K extends string, V> = { [x in Extract<K, string>]: V };
 type ArrayPushAction<
   StateKey,
   StateValue extends CompatibleArray<unknown>,
-  ActionPrefix extends string = string
+  ActionPrefix extends string
 > = Readonly<{
   type: `${ActionPrefix}_array_push_${Extract<StateKey, string>}`;
   value: StateValue[number];
 }>;
 
+type ArrayRemoveAction_Arguments<ArrayElement> = Readonly<
+  | {
+      index: number;
+      predicate?: undefined;
+    }
+  | {
+      index?: undefined;
+      predicate: (currentValue: ArrayElement, index: number) => boolean;
+    }
+>;
+
+type ArrayRemoveAction<
+  StateKey,
+  StateValue extends CompatibleArray<unknown>,
+  ActionPrefix extends string
+> = Readonly<
+  {
+    type: `${ActionPrefix}_array_remove_${Extract<StateKey, string>}`;
+  } & ArrayRemoveAction_Arguments<StateValue[number]>
+>;
+
 type ArrayReplaceAction_Arguments<ArrayElement> = Readonly<
   { value: ArrayElement } & (
-    | {
-        index: number;
-        predicate?: undefined;
+    | (ArrayRemoveAction_Arguments<ArrayElement> & {
         propertyToCheckEquality?: undefined;
-      }
-    | {
-        index?: undefined;
-        predicate: (currentValue: ArrayElement, index: number) => boolean;
-        propertyToCheckEquality?: undefined;
-      }
+      })
     | {
         index?: undefined;
         predicate?: undefined;
@@ -117,6 +131,11 @@ type StatePropertyHelper<
               value: A[number]
             ) => ArrayPushAction<StateKey, A, ActionPrefix>;
           } &
+            {
+              [x in `Array_remove_${Extract<StateKey, string>}`]: (
+                args: ArrayRemoveAction_Arguments<A[number]>
+              ) => ArrayRemoveAction<StateKey, A, ActionPrefix>;
+            } &
             {
               [x in `Array_replace_${Extract<StateKey, string>}`]: (
                 args: ArrayReplaceAction_Arguments<A[number]>
@@ -241,6 +260,14 @@ export function createStatePropertyHelper<
                 ? ArrayElement
                 : undefined
             ) => ({ value, type: `${actionPrefix}_array_push_${stateKey}` }),
+            [`Array_remove_${stateKey}`]: (
+              args: State[StateKey] extends CompatibleArray<infer ArrayElement>
+                ? ArrayRemoveAction_Arguments<ArrayElement>
+                : undefined
+            ) => ({
+              ...args,
+              type: `${actionPrefix}_array_remove_${stateKey}`,
+            }),
             [`Array_replace_${stateKey}`]: (
               args: State[StateKey] extends CompatibleArray<infer ArrayElement>
                 ? ArrayReplaceAction_Arguments<ArrayElement>
@@ -295,138 +322,181 @@ export function createStatePropertyHelper<
         type: `${actionPrefix}_set_${stateKey}`,
       }),
     },
-    reducer: (state: State, action: Action) => {
-      if (
-        isOfType<ArrayPushAction<State, unknown[], ActionPrefix>>(
-          action,
-          `${actionPrefix}_array_push_${stateKey}`
-        )
-      ) {
-        const arrayStateValue = shallowCloneArray(state[stateKey] as any);
-        arrayStateValue.push(action.value);
-        return { ...state, [stateKey]: arrayStateValue };
-      }
+    reducer: combineOptionalReducers(
+      ...(propertyType === TYPE_PROPERTY_ARRAY
+        ? [
+            (state: State, action: Action) => {
+              if (
+                isOfType<ArrayPushAction<State, unknown[], ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_array_push_${stateKey}`
+                )
+              ) {
+                const arrayState = shallowCloneArray(state[stateKey] as any);
+                arrayState.push(action.value);
+                return { ...state, [stateKey]: arrayState };
+              }
 
-      if (
-        isOfType<ArrayReplaceAction<StateKey, unknown[], ActionPrefix>>(
-          action,
-          `${actionPrefix}_array_replace_${stateKey}`
-        )
-      ) {
-        const valueToReplace = action.value as any;
-        const arrayStateValue = shallowCloneArray(state[stateKey] as any);
-        let index = -1;
-        let findIndexFn: Parameters<Array<any>["findIndex"]>[0] | undefined;
+              if (
+                isOfType<ArrayUnshiftAction<StateKey, unknown[], ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_array_unshift_${stateKey}`
+                )
+              ) {
+                const arrayState = shallowCloneArray(state[stateKey] as any);
+                arrayState.unshift(action.value);
+                return { ...state, [stateKey]: arrayState };
+              }
 
-        if (action.index != null) {
-          index = action.index;
-        } else if (action.predicate != null) {
-          findIndexFn = action.predicate;
-        } else if (action.propertyToCheckEquality != null) {
-          const propertyKey = action.propertyToCheckEquality as any;
+              return undefined;
+            },
+            (state: State, action: Action) => {
+              let actionValue: any;
+              let isRemoveAction = false;
 
-          findIndexFn = (currentValue) =>
-            currentValue[propertyKey] === valueToReplace[propertyKey];
+              /* istanbul ignore else */
+              if (
+                isOfType<ArrayRemoveAction<StateKey, unknown[], ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_array_remove_${stateKey}`
+                )
+              ) {
+                isRemoveAction = true;
+              } else if (
+                isOfType<ArrayReplaceAction<StateKey, unknown[], ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_array_replace_${stateKey}`
+                )
+              ) {
+                actionValue = action.value;
+              } else {
+                return undefined;
+              }
+
+              const arrayState = shallowCloneArray(state[stateKey] as any);
+              let index = -1;
+
+              let findIndexFn:
+                | Parameters<Array<any>["findIndex"]>[0]
+                | undefined;
+
+              if (action.index != null) {
+                index = action.index;
+              } else if (action.predicate != null) {
+                findIndexFn = action.predicate;
+              } else if (action.propertyToCheckEquality != null) {
+                const propertyKey = action.propertyToCheckEquality as any;
+
+                findIndexFn = (currentValue) =>
+                  currentValue[propertyKey] === actionValue[propertyKey];
+              }
+
+              if (findIndexFn != null) {
+                index = arrayState.findIndex(findIndexFn);
+              }
+
+              if (index >= 0) {
+                if (isRemoveAction) {
+                  arrayState.splice(index, 1);
+                } else {
+                  arrayState[index] = actionValue;
+                }
+              }
+
+              return { ...state, [stateKey]: arrayState };
+            },
+          ]
+        : []),
+      ...(propertyType === TYPE_PROPERTY_BOOLEAN
+        ? [
+            (state: State, action: Action) => {
+              /* istanbul ignore else */
+              if (
+                isOfType<BooleanSetTrueAction<StateKey, ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_boolean_set_true_${stateKey}`
+                )
+              ) {
+                return { ...state, [stateKey]: true };
+              } else if (
+                isOfType<BooleanSetFalseAction<StateKey, ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_boolean_set_false_${stateKey}`
+                )
+              ) {
+                return { ...state, [stateKey]: false };
+              } else if (
+                isOfType<BooleanToggleAction<StateKey, ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_boolean_toggle_${stateKey}`
+                )
+              ) {
+                return { ...state, [stateKey]: !state[stateKey] };
+              } else {
+                return undefined;
+              }
+            },
+          ]
+        : []),
+      ...(propertyType === TYPE_PROPERTY_OBJECT
+        ? [
+            (state: State, action: Action) => {
+              /* istanbul ignore else */
+              if (
+                isOfType<
+                  ObjectDeletePropertyAction<StateKey, {}, ActionPrefix>
+                >(action, `${actionPrefix}_object_delete_property_${stateKey}`)
+              ) {
+                const objectState = { ...state[stateKey] } as any;
+                delete objectState[action.key];
+                return { ...state, [stateKey]: objectState };
+              } else if (
+                isOfType<ObjectMergePropertyAction<StateKey, {}, ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_object_merge_property_${stateKey}`
+                )
+              ) {
+                const { type, ...mergeObj } = action;
+                const objectState = { ...state[stateKey], ...mergeObj } as any;
+                return { ...state, [stateKey]: objectState };
+              } else if (
+                isOfType<ObjectSetPropertyAction<StateKey, {}, ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_object_set_property_${stateKey}`
+                )
+              ) {
+                const objectState = { ...state[stateKey] } as any;
+                objectState[action.key] = action.value;
+                return { ...state, [stateKey]: objectState };
+              } else {
+                return undefined;
+              }
+            },
+          ]
+        : []),
+      (state: State, action: Action) => {
+        if (
+          isOfType<SetAction<StateKey, State[StateKey], ActionPrefix>>(
+            action,
+            `${actionPrefix}_set_${stateKey}`
+          )
+        ) {
+          return { ...state, [stateKey]: action.value };
         }
 
-        if (findIndexFn != null) {
-          index = arrayStateValue.findIndex(findIndexFn);
+        if (
+          isOfType<DeleteAction<StateKey, ActionPrefix>>(
+            action,
+            `${actionPrefix}_delete_${stateKey}`
+          )
+        ) {
+          const stateClone = { ...state };
+          delete stateClone[stateKey];
+          return stateClone;
         }
 
-        if (index !== -1) arrayStateValue[index] = action.value;
-        return { ...state, [stateKey]: arrayStateValue };
+        return undefined;
       }
-
-      if (
-        isOfType<ArrayUnshiftAction<StateKey, unknown[], ActionPrefix>>(
-          action,
-          `${actionPrefix}_array_unshift_${stateKey}`
-        )
-      ) {
-        const arrayStateValue = shallowCloneArray(state[stateKey] as any);
-        arrayStateValue.unshift(action.value);
-        return { ...state, [stateKey]: arrayStateValue };
-      }
-
-      if (
-        isOfType<BooleanSetTrueAction<StateKey, ActionPrefix>>(
-          action,
-          `${actionPrefix}_boolean_set_true_${stateKey}`
-        )
-      ) {
-        return { ...state, [stateKey]: true };
-      }
-
-      if (
-        isOfType<BooleanSetFalseAction<StateKey, ActionPrefix>>(
-          action,
-          `${actionPrefix}_boolean_set_false_${stateKey}`
-        )
-      ) {
-        return { ...state, [stateKey]: false };
-      }
-
-      if (
-        isOfType<BooleanToggleAction<StateKey, ActionPrefix>>(
-          action,
-          `${actionPrefix}_boolean_toggle_${stateKey}`
-        )
-      ) {
-        return { ...state, [stateKey]: !state[stateKey] };
-      }
-
-      if (
-        isOfType<ObjectDeletePropertyAction<StateKey, {}, ActionPrefix>>(
-          action,
-          `${actionPrefix}_object_delete_property_${stateKey}`
-        )
-      ) {
-        const objectStateValue = { ...state[stateKey] } as any;
-        delete objectStateValue[action.key];
-        return { ...state, [stateKey]: objectStateValue };
-      }
-
-      if (
-        isOfType<ObjectMergePropertyAction<StateKey, {}, ActionPrefix>>(
-          action,
-          `${actionPrefix}_object_merge_property_${stateKey}`
-        )
-      ) {
-        const { type, ...mergeObject } = action;
-        const objectStateValue = { ...state[stateKey], ...mergeObject } as any;
-        return { ...state, [stateKey]: objectStateValue };
-      }
-
-      if (
-        isOfType<ObjectSetPropertyAction<StateKey, {}, ActionPrefix>>(
-          action,
-          `${actionPrefix}_object_set_property_${stateKey}`
-        )
-      ) {
-        const objectStateValue = { ...state[stateKey] } as any;
-        objectStateValue[action.key] = action.value;
-        return { ...state, [stateKey]: objectStateValue };
-      }
-
-      if (
-        isOfType<SetAction<StateKey, State[StateKey], ActionPrefix>>(
-          action,
-          `${actionPrefix}_set_${stateKey}`
-        )
-      ) {
-        return { ...state, [stateKey]: action.value };
-      }
-
-      if (
-        isOfType<DeleteAction<StateKey, ActionPrefix>>(
-          action,
-          `${actionPrefix}_delete_${stateKey}`
-        )
-      ) {
-        return { ...state, [stateKey]: undefined };
-      }
-
-      return undefined;
-    },
+    ),
   } as unknown) as StatePropertyHelper<State, StateKey, ActionPrefix>;
 }
