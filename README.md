@@ -44,7 +44,6 @@ const {
 });
 
 /** Set up the other action creators */
-
 const allActionCreators = {
   ...PROPERTY_1_ACTION_CREATORS,
   ...PROPERTY_2_ACTION_CREATORS,
