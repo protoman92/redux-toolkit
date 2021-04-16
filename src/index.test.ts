@@ -1,4 +1,4 @@
-import { combineReducers, createSettablePropertyHelper } from ".";
+import { combineReducers, createStatePropertyHelper } from ".";
 
 describe("Redux helpers", () => {
   it("Settable property helper should work correctly", async () => {
@@ -9,7 +9,7 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = { property: "What" };
 
-    const helper = createSettablePropertyHelper<State, "property", "PREFIX">({
+    const helper = createStatePropertyHelper<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       stateKey: "property",
     });
@@ -31,7 +31,7 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = {};
 
-    const helper = createSettablePropertyHelper<State, "property", "PREFIX">({
+    const helper = createStatePropertyHelper<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "ARRAY",
       stateKey: "property",
@@ -113,7 +113,7 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = {};
 
-    const helper = createSettablePropertyHelper<State, "property", "PREFIX">({
+    const helper = createStatePropertyHelper<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "BOOLEAN",
       stateKey: "property",
@@ -160,7 +160,7 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = {};
 
-    const helper = createSettablePropertyHelper<State, "property", "PREFIX">({
+    const helper = createStatePropertyHelper<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "OBJECT",
       stateKey: "property",

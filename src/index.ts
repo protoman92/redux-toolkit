@@ -1,2 +1,2 @@
 export * from "./reducer";
-export * from "./settable_property";
+export * from "./state_property_helper";

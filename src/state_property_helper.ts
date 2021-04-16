@@ -233,7 +233,7 @@ type SettablePropertyHelper<
   reducer: ReducerWithOptionalReturn<State, Action>;
 };
 
-type CreateSettablePropertyHelperArgs<
+type createStatePropertyHelperArgs<
   State,
   StateKey extends keyof State,
   ActionPrefix extends string
@@ -262,7 +262,7 @@ function isOfType<T extends { type: string }>(
   return obj["type"] === typeToCheck;
 }
 
-export function createSettablePropertyHelper<
+export function createStatePropertyHelper<
   State,
   StateKey extends keyof State,
   ActionPrefix extends string
@@ -270,7 +270,7 @@ export function createSettablePropertyHelper<
   actionPrefix,
   propertyType,
   stateKey,
-}: CreateSettablePropertyHelperArgs<
+}: createStatePropertyHelperArgs<
   State,
   StateKey,
   ActionPrefix
