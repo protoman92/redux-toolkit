@@ -6,20 +6,14 @@ type Neverable<T> = T | null | undefined;
 type CompatibleArray<T> = T[] | readonly T[];
 type CompatibleObject<K extends string, V> = { [x in Extract<K, string>]: V };
 
-type NoopAction<ActionPrefix extends string> = Readonly<{
-  type: `${ActionPrefix}_noop`;
-}>;
-
 type ArrayPushAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends Neverable<CompatibleArray<infer ArrayElement>>
-  ? Readonly<{
-      type: `${ActionPrefix}_array_push_${Extract<StateKey, string>}`;
-      value: ArrayElement;
-    }>
-  : NoopAction<ActionPrefix>;
+  StateKey,
+  StateValue extends CompatibleArray<unknown>,
+  ActionPrefix extends string = string
+> = Readonly<{
+  type: `${ActionPrefix}_array_push_${Extract<StateKey, string>}`;
+  value: StateValue[number];
+}>;
 
 type ArrayReplaceAction_Arguments<ArrayElement> = Readonly<
   { value: ArrayElement } & (
@@ -42,156 +36,120 @@ type ArrayReplaceAction_Arguments<ArrayElement> = Readonly<
 >;
 
 type ArrayReplaceAction<
-  State,
-  StateKey extends keyof State,
+  StateKey,
+  StateValue extends CompatibleArray<unknown>,
   ActionPrefix extends string
-> = State[StateKey] extends Neverable<CompatibleArray<infer ArrayElement>>
-  ? Readonly<
-      {
-        type: `${ActionPrefix}_array_replace_${Extract<StateKey, string>}`;
-      } & ArrayReplaceAction_Arguments<ArrayElement>
-    >
-  : NoopAction<ActionPrefix>;
+> = Readonly<
+  {
+    type: `${ActionPrefix}_array_replace_${Extract<StateKey, string>}`;
+  } & ArrayReplaceAction_Arguments<StateValue[number]>
+>;
 
 type ArrayUnshiftAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends Neverable<CompatibleArray<infer ArrayElement>>
-  ? Readonly<{
-      type: `${ActionPrefix}_array_unshift_${Extract<StateKey, string>}`;
-      value: ArrayElement;
-    }>
-  : NoopAction<ActionPrefix>;
-
-type BooleanToggleAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends Neverable<boolean>
-  ? Readonly<{
-      type: `${ActionPrefix}_boolean_toggle_${Extract<StateKey, string>}`;
-    }>
-  : NoopAction<ActionPrefix>;
-
-type BooleanSetFalseAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends Neverable<boolean>
-  ? Readonly<{
-      type: `${ActionPrefix}_boolean_set_true_${Extract<StateKey, string>}`;
-    }>
-  : NoopAction<ActionPrefix>;
-
-type BooleanSetTrueAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends Neverable<boolean>
-  ? Readonly<{
-      type: `${ActionPrefix}_boolean_set_false_${Extract<StateKey, string>}`;
-    }>
-  : NoopAction<ActionPrefix>;
-
-type DeleteAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = Readonly<{ type: `${ActionPrefix}_delete_${Extract<StateKey, string>}` }>;
-
-type ObjectDeletePropertyAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends CompatibleObject<infer K, unknown>
-  ? Readonly<{
-      key: K;
-      type: `${ActionPrefix}_object_delete_property_${Extract<
-        StateKey,
-        string
-      >}`;
-    }>
-  : NoopAction<ActionPrefix>;
-
-type ObjectMergePropertyAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends CompatibleObject<string, unknown>
-  ? Readonly<
-      {
-        type: `${ActionPrefix}_object_merge_property_${Extract<
-          StateKey,
-          string
-        >}`;
-      } & Partial<State[StateKey]>
-    >
-  : NoopAction<ActionPrefix>;
-
-type ObjectSetPropertyAction<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = State[StateKey] extends CompatibleObject<infer K, infer V>
-  ? Readonly<{
-      key: K;
-      type: `${ActionPrefix}_object_set_property_${Extract<StateKey, string>}`;
-      value: V;
-    }>
-  : NoopAction<ActionPrefix>;
-
-type SetAction<
-  State,
-  StateKey extends keyof State,
+  StateKey,
+  StateValue extends CompatibleArray<unknown>,
   ActionPrefix extends string
 > = Readonly<{
-  type: `${ActionPrefix}_set_${Extract<StateKey, string>}`;
-  value: State[StateKey];
+  type: `${ActionPrefix}_array_unshift_${Extract<StateKey, string>}`;
+  value: StateValue[number];
 }>;
 
-type SettablePropertyHelper<
+type BooleanToggleAction<StateKey, ActionPrefix extends string> = Readonly<{
+  type: `${ActionPrefix}_boolean_toggle_${Extract<StateKey, string>}`;
+}>;
+
+type BooleanSetFalseAction<StateKey, ActionPrefix extends string> = Readonly<{
+  type: `${ActionPrefix}_boolean_set_true_${Extract<StateKey, string>}`;
+}>;
+
+type BooleanSetTrueAction<StateKey, ActionPrefix extends string> = Readonly<{
+  type: `${ActionPrefix}_boolean_set_false_${Extract<StateKey, string>}`;
+}>;
+
+type DeleteAction<StateKey, ActionPrefix extends string> = Readonly<{
+  type: `${ActionPrefix}_delete_${Extract<StateKey, string>}`;
+}>;
+
+type ObjectDeletePropertyAction<
+  StateKey,
+  StateValue extends CompatibleObject<string, unknown>,
+  ActionPrefix extends string
+> = Readonly<{
+  key: keyof StateValue;
+  type: `${ActionPrefix}_object_delete_property_${Extract<StateKey, string>}`;
+}>;
+
+type ObjectMergePropertyAction<
+  StateKey,
+  StateValue extends CompatibleObject<string, unknown>,
+  ActionPrefix extends string
+> = Readonly<
+  {
+    type: `${ActionPrefix}_object_merge_property_${Extract<StateKey, string>}`;
+  } & Partial<StateValue>
+>;
+
+type ObjectSetPropertyAction<
+  StateKey,
+  StateValue extends CompatibleObject<string, unknown>,
+  ActionPrefix extends string
+> = Readonly<{
+  key: keyof StateValue;
+  type: `${ActionPrefix}_object_set_property_${Extract<StateKey, string>}`;
+  value: StateValue[keyof StateValue];
+}>;
+
+type SetAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
+  type: `${ActionPrefix}_set_${Extract<StateKey, string>}`;
+  value: StateValue;
+}>;
+
+type StatePropertyHelper<
   State,
   StateKey extends keyof State,
   ActionPrefix extends string
 > = {
   actionCreators: Readonly<
-    (State[StateKey] extends Neverable<boolean>
-      ? {
-          [x in `Boolean_set_false_${Extract<
-            StateKey,
-            string
-          >}`]: BooleanSetFalseAction<State, StateKey, ActionPrefix>;
-        } &
-          {
-            [x in `Boolean_set_true_${Extract<
-              StateKey,
-              string
-            >}`]: BooleanSetTrueAction<State, StateKey, ActionPrefix>;
-          } &
-          {
-            [x in `Boolean_toggle_${Extract<
-              StateKey,
-              string
-            >}`]: BooleanToggleAction<State, StateKey, ActionPrefix>;
-          }
-      : {}) &
-      (State[StateKey] extends Neverable<CompatibleArray<infer ArrayElement>>
+    (State[StateKey] extends Neverable<infer A>
+      ? A extends CompatibleArray<unknown>
         ? {
             [x in `Array_push_${Extract<StateKey, string>}`]: (
-              value: ArrayElement
-            ) => ArrayPushAction<State, StateKey, ActionPrefix>;
+              value: A[number]
+            ) => ArrayPushAction<StateKey, A, ActionPrefix>;
           } &
             {
               [x in `Array_replace_${Extract<StateKey, string>}`]: (
-                args: ArrayReplaceAction_Arguments<ArrayElement>
-              ) => ArrayReplaceAction<State, StateKey, ActionPrefix>;
+                args: ArrayReplaceAction_Arguments<A[number]>
+              ) => ArrayReplaceAction<StateKey, A, ActionPrefix>;
             } &
             {
               [x in `Array_unshift_${Extract<StateKey, string>}`]: (
-                value: ArrayElement
-              ) => ArrayUnshiftAction<State, StateKey, ActionPrefix>;
+                value: A[number]
+              ) => ArrayUnshiftAction<StateKey, A, ActionPrefix>;
             }
+        : {}
+      : {}) &
+      (State[StateKey] extends Neverable<infer B>
+        ? B extends boolean
+          ? {
+              [x in `Boolean_set_false_${Extract<
+                StateKey,
+                string
+              >}`]: BooleanSetFalseAction<StateKey, ActionPrefix>;
+            } &
+              {
+                [x in `Boolean_set_true_${Extract<
+                  StateKey,
+                  string
+                >}`]: BooleanSetTrueAction<StateKey, ActionPrefix>;
+              } &
+              {
+                [x in `Boolean_toggle_${Extract<
+                  StateKey,
+                  string
+                >}`]: BooleanToggleAction<StateKey, ActionPrefix>;
+              }
+          : {}
         : {}) &
       (State[StateKey] extends Neverable<infer O>
         ? O extends CompatibleObject<string, unknown>
@@ -200,12 +158,12 @@ type SettablePropertyHelper<
                 K extends keyof O
               >(
                 key: K
-              ) => ObjectDeletePropertyAction<State, StateKey, ActionPrefix>;
+              ) => ObjectDeletePropertyAction<StateKey, O, ActionPrefix>;
             } &
               {
                 [x in `Object_merge_property_${Extract<StateKey, string>}`]: (
                   obj: Partial<O>
-                ) => ObjectMergePropertyAction<State, StateKey, ActionPrefix>;
+                ) => ObjectMergePropertyAction<StateKey, O, ActionPrefix>;
               } &
               {
                 [x in `Object_set_property_${Extract<StateKey, string>}`]: <
@@ -213,13 +171,12 @@ type SettablePropertyHelper<
                 >(
                   key: K,
                   value: O[K]
-                ) => ObjectSetPropertyAction<State, StateKey, ActionPrefix>;
+                ) => ObjectSetPropertyAction<StateKey, O, ActionPrefix>;
               }
           : {}
         : {}) &
       {
         [x in `Delete_${Extract<StateKey, string>}`]: DeleteAction<
-          State,
           StateKey,
           ActionPrefix
         >;
@@ -227,7 +184,7 @@ type SettablePropertyHelper<
       {
         [x in `Set_${Extract<StateKey, string>}`]: (
           value: State[StateKey]
-        ) => SetAction<State, StateKey, ActionPrefix>;
+        ) => SetAction<StateKey, State[StateKey], ActionPrefix>;
       }
   >;
   reducer: ReducerWithOptionalReturn<State, Action>;
@@ -258,7 +215,7 @@ const TYPE_PROPERTY_OBJECT = "OBJECT";
 function isOfType<T extends { type: string }>(
   obj: Readonly<{ type: string }>,
   typeToCheck: string
-): obj is Exclude<T, NoopAction<string>> {
+): obj is T {
   return obj["type"] === typeToCheck;
 }
 
@@ -274,7 +231,7 @@ export function createStatePropertyHelper<
   State,
   StateKey,
   ActionPrefix
->): SettablePropertyHelper<State, StateKey, ActionPrefix> {
+>): StatePropertyHelper<State, StateKey, ActionPrefix> {
   return ({
     actionCreators: {
       ...(propertyType === TYPE_PROPERTY_ARRAY
@@ -340,7 +297,7 @@ export function createStatePropertyHelper<
     },
     reducer: (state: State, action: Action) => {
       if (
-        isOfType<ArrayPushAction<State, StateKey, ActionPrefix>>(
+        isOfType<ArrayPushAction<State, unknown[], ActionPrefix>>(
           action,
           `${actionPrefix}_array_push_${stateKey}`
         )
@@ -351,7 +308,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<ArrayReplaceAction<State, StateKey, ActionPrefix>>(
+        isOfType<ArrayReplaceAction<StateKey, unknown[], ActionPrefix>>(
           action,
           `${actionPrefix}_array_replace_${stateKey}`
         )
@@ -381,7 +338,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<ArrayUnshiftAction<State, StateKey, ActionPrefix>>(
+        isOfType<ArrayUnshiftAction<StateKey, unknown[], ActionPrefix>>(
           action,
           `${actionPrefix}_array_unshift_${stateKey}`
         )
@@ -392,7 +349,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<BooleanSetTrueAction<State, StateKey, ActionPrefix>>(
+        isOfType<BooleanSetTrueAction<StateKey, ActionPrefix>>(
           action,
           `${actionPrefix}_boolean_set_true_${stateKey}`
         )
@@ -401,7 +358,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<BooleanSetFalseAction<State, StateKey, ActionPrefix>>(
+        isOfType<BooleanSetFalseAction<StateKey, ActionPrefix>>(
           action,
           `${actionPrefix}_boolean_set_false_${stateKey}`
         )
@@ -410,7 +367,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<BooleanToggleAction<State, StateKey, ActionPrefix>>(
+        isOfType<BooleanToggleAction<StateKey, ActionPrefix>>(
           action,
           `${actionPrefix}_boolean_toggle_${stateKey}`
         )
@@ -419,7 +376,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<ObjectDeletePropertyAction<State, StateKey, ActionPrefix>>(
+        isOfType<ObjectDeletePropertyAction<StateKey, {}, ActionPrefix>>(
           action,
           `${actionPrefix}_object_delete_property_${stateKey}`
         )
@@ -430,7 +387,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<ObjectMergePropertyAction<State, StateKey, ActionPrefix>>(
+        isOfType<ObjectMergePropertyAction<StateKey, {}, ActionPrefix>>(
           action,
           `${actionPrefix}_object_merge_property_${stateKey}`
         )
@@ -441,7 +398,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<ObjectSetPropertyAction<State, StateKey, ActionPrefix>>(
+        isOfType<ObjectSetPropertyAction<StateKey, {}, ActionPrefix>>(
           action,
           `${actionPrefix}_object_set_property_${stateKey}`
         )
@@ -452,7 +409,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<SetAction<State, StateKey, ActionPrefix>>(
+        isOfType<SetAction<StateKey, State[StateKey], ActionPrefix>>(
           action,
           `${actionPrefix}_set_${stateKey}`
         )
@@ -461,7 +418,7 @@ export function createStatePropertyHelper<
       }
 
       if (
-        isOfType<DeleteAction<State, StateKey, ActionPrefix>>(
+        isOfType<DeleteAction<StateKey, ActionPrefix>>(
           action,
           `${actionPrefix}_delete_${stateKey}`
         )
@@ -471,5 +428,5 @@ export function createStatePropertyHelper<
 
       return undefined;
     },
-  } as unknown) as SettablePropertyHelper<State, StateKey, ActionPrefix>;
+  } as unknown) as StatePropertyHelper<State, StateKey, ActionPrefix>;
 }
