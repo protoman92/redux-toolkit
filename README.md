@@ -62,3 +62,50 @@ const reducer = combineReducer(
   PROPERTY_3_REDUCER
 )
 ```
+
+## RxJS helpers
+
+For an introduction to **RxJS**, please visit their [page](https://github.com/ReactiveX/rxjs).
+
+For an introduction to **redux-observable**, please visit their [page](https://github.com/redux-observable/redux-observable).
+
+### createOfActionType
+
+This helper creates a rxjs operator that correctly filters the specified action
+types, and the actions that get emitted will have all their properties in tact
+for type safety. Take a look at the [sample test code](./src/rxjs.test.ts) for
+an example of how it would look in practice.
+
+```javascript
+actionStream.pipe(
+  ofActionType('ACTION_1'),
+  tap((action) => {
+    /** Outputs 'ACTION_1' */
+    console.log(action.type);
+    /** This should be type-safe */
+    console.log(action.property);
+  }
+)
+```
+
+## Convenient interfaces
+
+### ActionType
+
+This type extracts all actions defined in an object - for e.g.:
+
+```javascript
+const actionCreators = {
+  a: { type: 'A' as const },
+  b: ( property: string) => ({ property, type: 'B' as const }),
+}
+
+type AllActionType = ActionType<typeof actionCreators>;
+/** Equivalent to */
+type AllActionType2 =
+  | { type: 'A' as const } 
+  | { property: string; type: 'B' as const }
+```
+
+It's able to infer function return types, so don't worry about using an action
+creator function.
