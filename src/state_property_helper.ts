@@ -385,7 +385,7 @@ export function createStatePropertyHelper<
               } else if (action.predicate != null) {
                 findIndexFn = action.predicate;
               } else if (action.propertyToCheckEquality != null) {
-                const propertyKey = action.propertyToCheckEquality as any;
+                const propertyKey = action.propertyToCheckEquality as string;
 
                 findIndexFn = (currentValue) =>
                   currentValue[propertyKey] === actionValue[propertyKey];
