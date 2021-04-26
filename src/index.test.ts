@@ -227,8 +227,8 @@ describe("Redux helpers", () => {
       b: boolean;
       c: { a?: number; b?: string };
       d: string;
-      e?: undefined;
-      f?: null;
+      e?: string | undefined;
+      f: string | null;
     }
 
     let state: State | undefined = {
@@ -250,6 +250,8 @@ describe("Redux helpers", () => {
     state = reducer(state, actionCreators.b.Boolean_set_true_b)!;
     state = reducer(state, actionCreators.c.Object_set_property_c("a", 1))!;
     state = reducer(state, actionCreators.d.Set_d("d"))!;
+    state = reducer(state, actionCreators.e.Set_e("e"))!;
+    state = reducer(state, actionCreators.f.Set_f("f"))!;
 
     // Then
     expect(state).toEqual({
@@ -257,8 +259,8 @@ describe("Redux helpers", () => {
       b: true,
       c: { a: 1 },
       d: "d",
-      e: undefined,
-      f: null,
+      e: "e",
+      f: "f",
     });
   });
 

@@ -523,18 +523,24 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
   actionPrefix,
   state,
 }: Readonly<{ actionPrefix: ActionPrefix; state: State }>): Readonly<{
-  actionCreators: {
-    [Key in keyof State]: State[Key] extends null | undefined
-      ? undefined
-      : (State[Key] extends CompatibleArray<any>
+  actionCreators: Required<
+    {
+      [Key in keyof State]: ActionCreators.ForAny<
+        Key,
+        State[Key],
+        ActionPrefix
+      > &
+        (State[Key] extends null | undefined
+          ? {}
+          : State[Key] extends CompatibleArray<any>
           ? ActionCreators.ForArray<State[Key], Key, ActionPrefix>
           : State[Key] extends boolean
           ? ActionCreators.ForBoolean<Key, ActionPrefix>
           : State[Key] extends CompatibleObject<string, unknown>
           ? ActionCreators.ForObject<State[Key], Key, ActionPrefix>
-          : {}) &
-          ActionCreators.ForAny<Key, State[Key], ActionPrefix>;
-  };
+          : {});
+    }
+  >;
   reducer: ReducerWithOptionalReturn<State, Action>;
 }> {
   const actionCreators: CompatibleObject<string, unknown> = {};
@@ -542,7 +548,6 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
 
   for (const stateKey in state) {
     const stateValue = state[stateKey];
-    if (stateValue == null) continue;
 
     if (stateValue instanceof Array) {
       const {
