@@ -63,6 +63,30 @@ const reducer = combineReducer(
 )
 ```
 
+If you have a default state object, such as:
+
+```javascript
+const defaultState = { a: 1, b: 2 };
+```
+
+You can also use `createStatePropertyHelpers` to automatically provide action
+creators and reducer for all eligible properties (i.e. those that have concrete
+values, not null/undefined):
+
+```
+const { actionCreators, reducer } = createStatePropertyHelpers({
+  actionPrefix: PREFIX,
+  state: { a: [], b: true, c: undefined }
+});
+
+/** You can access the action creators like so */
+actionCreators.a.Array_push_a(0);
+actionCreators.b.Boolean_set_true_b;
+
+/** Since c is undefined, there are no action creators generated for it */
+// actionCreators.c;
+```
+
 ## RxJS helpers
 
 For an introduction to **RxJS**, please visit their [page](https://github.com/ReactiveX/rxjs).
