@@ -118,6 +118,89 @@ type SetAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
   value: StateValue;
 }>;
 
+namespace ActionCreators {
+  export type ForAny<StateKey, StateValue, ActionPrefix extends string> = {
+    [x in `Delete_${Extract<StateKey, string>}`]: DeleteAction<
+      StateKey,
+      ActionPrefix
+    >;
+  } &
+    {
+      [x in `Set_${Extract<StateKey, string>}`]: (
+        value: StateValue
+      ) => SetAction<StateKey, StateValue, ActionPrefix>;
+    };
+
+  export type ForArray<
+    A extends CompatibleArray<unknown>,
+    StateKey,
+    ActionPrefix extends string
+  > = {
+    [x in `Array_push_${Extract<StateKey, string>}`]: (
+      value: A[number]
+    ) => ArrayPushAction<StateKey, A, ActionPrefix>;
+  } &
+    {
+      [x in `Array_remove_${Extract<StateKey, string>}`]: (
+        args: ArrayRemoveAction_Arguments<A[number]>
+      ) => ArrayRemoveAction<StateKey, A, ActionPrefix>;
+    } &
+    {
+      [x in `Array_replace_${Extract<StateKey, string>}`]: (
+        args: ArrayReplaceAction_Arguments<A[number]>
+      ) => ArrayReplaceAction<StateKey, A, ActionPrefix>;
+    } &
+    {
+      [x in `Array_unshift_${Extract<StateKey, string>}`]: (
+        value: A[number]
+      ) => ArrayUnshiftAction<StateKey, A, ActionPrefix>;
+    };
+
+  export type ForBoolean<StateKey, ActionPrefix extends string> = {
+    [x in `Boolean_set_false_${Extract<
+      StateKey,
+      string
+    >}`]: BooleanSetFalseAction<StateKey, ActionPrefix>;
+  } &
+    {
+      [x in `Boolean_set_true_${Extract<
+        StateKey,
+        string
+      >}`]: BooleanSetTrueAction<StateKey, ActionPrefix>;
+    } &
+    {
+      [x in `Boolean_toggle_${Extract<StateKey, string>}`]: BooleanToggleAction<
+        StateKey,
+        ActionPrefix
+      >;
+    };
+
+  export type ForObject<
+    O extends CompatibleObject<string, unknown>,
+    StateKey,
+    ActionPrefix extends string
+  > = {
+    [x in `Object_delete_property_${Extract<StateKey, string>}`]: <
+      K extends keyof O
+    >(
+      key: K
+    ) => ObjectDeletePropertyAction<StateKey, O, ActionPrefix>;
+  } &
+    {
+      [x in `Object_merge_property_${Extract<StateKey, string>}`]: (
+        obj: Partial<O>
+      ) => ObjectMergePropertyAction<StateKey, O, ActionPrefix>;
+    } &
+    {
+      [x in `Object_set_property_${Extract<StateKey, string>}`]: <
+        K extends keyof O
+      >(
+        key: K,
+        value: O[K]
+      ) => ObjectSetPropertyAction<StateKey, O, ActionPrefix>;
+    };
+}
+
 type StatePropertyHelper<
   State,
   StateKey extends keyof State,
@@ -126,85 +209,20 @@ type StatePropertyHelper<
   actionCreators: Readonly<
     (State[StateKey] extends Neverable<infer A>
       ? A extends CompatibleArray<unknown>
-        ? {
-            [x in `Array_push_${Extract<StateKey, string>}`]: (
-              value: A[number]
-            ) => ArrayPushAction<StateKey, A, ActionPrefix>;
-          } &
-            {
-              [x in `Array_remove_${Extract<StateKey, string>}`]: (
-                args: ArrayRemoveAction_Arguments<A[number]>
-              ) => ArrayRemoveAction<StateKey, A, ActionPrefix>;
-            } &
-            {
-              [x in `Array_replace_${Extract<StateKey, string>}`]: (
-                args: ArrayReplaceAction_Arguments<A[number]>
-              ) => ArrayReplaceAction<StateKey, A, ActionPrefix>;
-            } &
-            {
-              [x in `Array_unshift_${Extract<StateKey, string>}`]: (
-                value: A[number]
-              ) => ArrayUnshiftAction<StateKey, A, ActionPrefix>;
-            }
+        ? ActionCreators.ForArray<A, StateKey, ActionPrefix>
         : {}
       : {}) &
       (State[StateKey] extends Neverable<infer B>
         ? B extends boolean
-          ? {
-              [x in `Boolean_set_false_${Extract<
-                StateKey,
-                string
-              >}`]: BooleanSetFalseAction<StateKey, ActionPrefix>;
-            } &
-              {
-                [x in `Boolean_set_true_${Extract<
-                  StateKey,
-                  string
-                >}`]: BooleanSetTrueAction<StateKey, ActionPrefix>;
-              } &
-              {
-                [x in `Boolean_toggle_${Extract<
-                  StateKey,
-                  string
-                >}`]: BooleanToggleAction<StateKey, ActionPrefix>;
-              }
+          ? ActionCreators.ForBoolean<StateKey, ActionPrefix>
           : {}
         : {}) &
       (State[StateKey] extends Neverable<infer O>
         ? O extends CompatibleObject<string, unknown>
-          ? {
-              [x in `Object_delete_property_${Extract<StateKey, string>}`]: <
-                K extends keyof O
-              >(
-                key: K
-              ) => ObjectDeletePropertyAction<StateKey, O, ActionPrefix>;
-            } &
-              {
-                [x in `Object_merge_property_${Extract<StateKey, string>}`]: (
-                  obj: Partial<O>
-                ) => ObjectMergePropertyAction<StateKey, O, ActionPrefix>;
-              } &
-              {
-                [x in `Object_set_property_${Extract<StateKey, string>}`]: <
-                  K extends keyof O
-                >(
-                  key: K,
-                  value: O[K]
-                ) => ObjectSetPropertyAction<StateKey, O, ActionPrefix>;
-              }
+          ? ActionCreators.ForObject<O, StateKey, ActionPrefix>
           : {}
         : {}) &
-      {
-        [x in `Delete_${Extract<StateKey, string>}`]: DeleteAction<
-          StateKey,
-          ActionPrefix
-        >;
-      } &
-      {
-        [x in `Set_${Extract<StateKey, string>}`]: (
-          value: State[StateKey]
-        ) => SetAction<StateKey, State[StateKey], ActionPrefix>;
-      }
+      ActionCreators.ForAny<StateKey, State[StateKey], ActionPrefix>
   >;
   reducer: ReducerWithOptionalReturn<State, Action>;
 };
@@ -499,4 +517,85 @@ export function createStatePropertyHelper<
       }
     ),
   } as unknown) as StatePropertyHelper<State, StateKey, ActionPrefix>;
+}
+
+export function createStatePropertyHelpers<State, ActionPrefix extends string>({
+  actionPrefix,
+  state,
+}: Readonly<{ actionPrefix: ActionPrefix; state: State }>): Readonly<{
+  actionCreators: {
+    [Key in keyof State]: State[Key] extends null | undefined
+      ? undefined
+      : (State[Key] extends CompatibleArray<any>
+          ? ActionCreators.ForArray<State[Key], Key, ActionPrefix>
+          : State[Key] extends boolean
+          ? ActionCreators.ForBoolean<Key, ActionPrefix>
+          : State[Key] extends CompatibleObject<string, unknown>
+          ? ActionCreators.ForObject<State[Key], Key, ActionPrefix>
+          : {}) &
+          ActionCreators.ForAny<Key, State[Key], ActionPrefix>;
+  };
+  reducer: ReducerWithOptionalReturn<State, Action>;
+}> {
+  const actionCreators: CompatibleObject<string, unknown> = {};
+  let reducers: ReducerWithOptionalReturn<State, Action>[] = [];
+
+  for (const stateKey in state) {
+    const stateValue = state[stateKey];
+    if (stateValue == null) continue;
+
+    if (stateValue instanceof Array) {
+      const {
+        actionCreators: arrayActionCreators,
+        reducer: arrayReducer,
+      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+        stateKey,
+        actionPrefix,
+        propertyType: "ARRAY",
+      } as any);
+
+      actionCreators[stateKey] = arrayActionCreators;
+      reducers.push(arrayReducer);
+    } else if (typeof stateValue === "boolean") {
+      const {
+        actionCreators: booleanActionCreators,
+        reducer: booleanReducer,
+      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+        stateKey,
+        actionPrefix,
+        propertyType: "BOOLEAN",
+      } as any);
+
+      actionCreators[stateKey] = booleanActionCreators;
+      reducers.push(booleanReducer);
+    } else if (typeof stateValue === "object") {
+      const {
+        actionCreators: objectActionCreators,
+        reducer: objectReducer,
+      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+        actionPrefix,
+        propertyType: "OBJECT",
+        stateKey: stateKey as keyof State,
+      } as any);
+
+      actionCreators[stateKey] = objectActionCreators;
+      reducers.push(objectReducer);
+    } else {
+      const {
+        actionCreators: anyActionCreators,
+        reducer: anyReducer,
+      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+        actionPrefix,
+        stateKey: stateKey as keyof State,
+      } as any);
+
+      actionCreators[stateKey] = anyActionCreators;
+      reducers.push(anyReducer);
+    }
+  }
+
+  return {
+    actionCreators: actionCreators as any,
+    reducer: combineOptionalReducers(...reducers),
+  };
 }

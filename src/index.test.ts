@@ -1,4 +1,8 @@
-import { combineReducers, createStatePropertyHelper } from ".";
+import {
+  combineReducers,
+  createStatePropertyHelper,
+  createStatePropertyHelpers,
+} from ".";
 
 describe("Redux helpers", () => {
   it("Helper should work correctly", async () => {
@@ -214,6 +218,48 @@ describe("Redux helpers", () => {
     );
 
     expect(state?.property).toEqual({ b: 100 });
+  });
+
+  it("Helpers for state object should work correctly", async () => {
+    // Setup
+    interface State {
+      a: number[];
+      b: boolean;
+      c: { a?: number; b?: string };
+      d: string;
+      e?: undefined;
+      f?: null;
+    }
+
+    let state: State | undefined = {
+      a: [],
+      b: false,
+      c: {},
+      d: "",
+      e: undefined,
+      f: null,
+    };
+
+    const { actionCreators, reducer } = createStatePropertyHelpers({
+      state,
+      actionPrefix: "PREFIX",
+    });
+
+    // When
+    state = reducer(state, actionCreators.a.Array_push_a(0))!;
+    state = reducer(state, actionCreators.b.Boolean_set_true_b)!;
+    state = reducer(state, actionCreators.c.Object_set_property_c("a", 1))!;
+    state = reducer(state, actionCreators.d.Set_d("d"))!;
+
+    // Then
+    expect(state).toEqual({
+      a: [0],
+      b: true,
+      c: { a: 1 },
+      d: "d",
+      e: undefined,
+      f: null,
+    });
   });
 
   it("Combining reducers should work", () => {
