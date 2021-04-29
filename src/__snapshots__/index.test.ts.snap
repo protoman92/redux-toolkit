@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Redux helpers Helpers for state object should work correctly 1`] = `
+Object {
+  "a": Object {
+    "Array_push": [Function],
+    "Array_remove": [Function],
+    "Array_replace": [Function],
+    "Array_unshift": [Function],
+    "Delete": Object {
+      "type": "PREFIX_delete_a",
+    },
+    "Set": [Function],
+  },
+  "b": Object {
+    "Boolean_set_false": Object {
+      "type": "PREFIX_boolean_set_false_b",
+    },
+    "Boolean_set_true": Object {
+      "type": "PREFIX_boolean_set_true_b",
+    },
+    "Boolean_toggle": Object {
+      "type": "PREFIX_boolean_toggle_b",
+    },
+    "Delete": Object {
+      "type": "PREFIX_delete_b",
+    },
+    "Set": [Function],
+  },
+  "c": Object {
+    "Delete": Object {
+      "type": "PREFIX_delete_c",
+    },
+    "Object_delete_property": [Function],
+    "Object_merge_property": [Function],
+    "Object_set_property": [Function],
+    "Set": [Function],
+  },
+  "d": Object {
+    "Delete": Object {
+      "type": "PREFIX_delete_d",
+    },
+    "Set": [Function],
+  },
+  "e": Object {
+    "Delete": Object {
+      "type": "PREFIX_delete_e",
+    },
+    "Set": [Function],
+  },
+  "f": Object {
+    "Delete": Object {
+      "type": "PREFIX_delete_f",
+    },
+    "Object_delete_property": [Function],
+    "Object_merge_property": [Function],
+    "Object_set_property": [Function],
+    "Set": [Function],
+  },
+}
+`;

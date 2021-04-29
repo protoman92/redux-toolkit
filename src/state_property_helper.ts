@@ -120,85 +120,104 @@ type SetAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
 
 namespace ActionCreators {
   export type ForAny<StateKey, StateValue, ActionPrefix extends string> = {
-    [x in `Delete_${Extract<StateKey, string>}`]: DeleteAction<
+    [x in `Delete${Extract<StateKey, string>}`]: DeleteAction<
       StateKey,
       ActionPrefix
     >;
   } &
     {
-      [x in `Set_${Extract<StateKey, string>}`]: (
+      [x in `Set${Extract<StateKey, string>}`]: (
         value: StateValue
       ) => SetAction<StateKey, StateValue, ActionPrefix>;
     };
 
   export type ForArray<
-    A extends CompatibleArray<unknown>,
     StateKey,
+    StateValue extends CompatibleArray<unknown>,
     ActionPrefix extends string
   > = {
-    [x in `Array_push_${Extract<StateKey, string>}`]: (
-      value: A[number]
-    ) => ArrayPushAction<StateKey, A, ActionPrefix>;
+    [x in `Array_push${Extract<StateKey, string>}`]: (
+      value: StateValue[number]
+    ) => ArrayPushAction<StateKey, StateValue, ActionPrefix>;
   } &
     {
-      [x in `Array_remove_${Extract<StateKey, string>}`]: (
-        args: ArrayRemoveAction_Arguments<A[number]>
-      ) => ArrayRemoveAction<StateKey, A, ActionPrefix>;
+      [x in `Array_remove${Extract<StateKey, string>}`]: (
+        args: ArrayRemoveAction_Arguments<StateValue[number]>
+      ) => ArrayRemoveAction<StateKey, StateValue, ActionPrefix>;
     } &
     {
-      [x in `Array_replace_${Extract<StateKey, string>}`]: (
-        args: ArrayReplaceAction_Arguments<A[number]>
-      ) => ArrayReplaceAction<StateKey, A, ActionPrefix>;
+      [x in `Array_replace${Extract<StateKey, string>}`]: (
+        args: ArrayReplaceAction_Arguments<StateValue[number]>
+      ) => ArrayReplaceAction<StateKey, StateValue, ActionPrefix>;
     } &
     {
-      [x in `Array_unshift_${Extract<StateKey, string>}`]: (
-        value: A[number]
-      ) => ArrayUnshiftAction<StateKey, A, ActionPrefix>;
+      [x in `Array_unshift${Extract<StateKey, string>}`]: (
+        value: StateValue[number]
+      ) => ArrayUnshiftAction<StateKey, StateValue, ActionPrefix>;
     };
 
   export type ForBoolean<StateKey, ActionPrefix extends string> = {
-    [x in `Boolean_set_false_${Extract<
+    [x in `Boolean_set_false${Extract<
       StateKey,
       string
     >}`]: BooleanSetFalseAction<StateKey, ActionPrefix>;
   } &
     {
-      [x in `Boolean_set_true_${Extract<
+      [x in `Boolean_set_true${Extract<
         StateKey,
         string
       >}`]: BooleanSetTrueAction<StateKey, ActionPrefix>;
     } &
     {
-      [x in `Boolean_toggle_${Extract<StateKey, string>}`]: BooleanToggleAction<
+      [x in `Boolean_toggle${Extract<StateKey, string>}`]: BooleanToggleAction<
         StateKey,
         ActionPrefix
       >;
     };
 
   export type ForObject<
-    O extends CompatibleObject<string, unknown>,
     StateKey,
+    StateValue extends CompatibleObject<string, unknown>,
     ActionPrefix extends string
   > = {
-    [x in `Object_delete_property_${Extract<StateKey, string>}`]: <
-      K extends keyof O
+    [x in `Object_delete_property${Extract<StateKey, string>}`]: <
+      K extends keyof StateValue
     >(
       key: K
-    ) => ObjectDeletePropertyAction<StateKey, O, ActionPrefix>;
+    ) => ObjectDeletePropertyAction<StateKey, StateValue, ActionPrefix>;
   } &
     {
-      [x in `Object_merge_property_${Extract<StateKey, string>}`]: (
-        obj: Partial<O>
-      ) => ObjectMergePropertyAction<StateKey, O, ActionPrefix>;
+      [x in `Object_merge_property${Extract<StateKey, string>}`]: (
+        obj: Partial<StateValue>
+      ) => ObjectMergePropertyAction<StateKey, StateValue, ActionPrefix>;
     } &
     {
-      [x in `Object_set_property_${Extract<StateKey, string>}`]: <
-        K extends keyof O
+      [x in `Object_set_property${Extract<StateKey, string>}`]: <
+        K extends keyof StateValue
       >(
         key: K,
-        value: O[K]
-      ) => ObjectSetPropertyAction<StateKey, O, ActionPrefix>;
+        value: StateValue[K]
+      ) => ObjectSetPropertyAction<StateKey, StateValue, ActionPrefix>;
     };
+
+  export type ForWholeState<State, ActionPrefix extends string> = Required<
+    {
+      [Key in keyof State]: ActionCreators.ForAny<
+        "",
+        State[Key],
+        ActionPrefix
+      > &
+        (State[Key] extends null | undefined
+          ? {}
+          : State[Key] extends CompatibleArray<any>
+          ? ActionCreators.ForArray<"", State[Key], ActionPrefix>
+          : State[Key] extends boolean
+          ? ActionCreators.ForBoolean<"", ActionPrefix>
+          : State[Key] extends CompatibleObject<string, unknown>
+          ? ActionCreators.ForObject<"", State[Key], ActionPrefix>
+          : {});
+    }
+  >;
 }
 
 type StatePropertyHelper<
@@ -209,20 +228,35 @@ type StatePropertyHelper<
   actionCreators: Readonly<
     (State[StateKey] extends Neverable<infer A>
       ? A extends CompatibleArray<unknown>
-        ? ActionCreators.ForArray<A, StateKey, ActionPrefix>
+        ? ActionCreators.ForArray<
+            `_${Extract<StateKey, string>}`,
+            A,
+            ActionPrefix
+          >
         : {}
       : {}) &
       (State[StateKey] extends Neverable<infer B>
         ? B extends boolean
-          ? ActionCreators.ForBoolean<StateKey, ActionPrefix>
+          ? ActionCreators.ForBoolean<
+              `_${Extract<StateKey, string>}`,
+              ActionPrefix
+            >
           : {}
         : {}) &
       (State[StateKey] extends Neverable<infer O>
         ? O extends CompatibleObject<string, unknown>
-          ? ActionCreators.ForObject<O, StateKey, ActionPrefix>
+          ? ActionCreators.ForObject<
+              `_${Extract<StateKey, string>}`,
+              O,
+              ActionPrefix
+            >
           : {}
         : {}) &
-      ActionCreators.ForAny<StateKey, State[StateKey], ActionPrefix>
+      ActionCreators.ForAny<
+        `_${Extract<StateKey, string>}`,
+        State[StateKey],
+        ActionPrefix
+      >
   >;
   reducer: ReducerWithOptionalReturn<State, Action>;
 };
@@ -523,27 +557,10 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
   actionPrefix,
   state,
 }: Readonly<{ actionPrefix: ActionPrefix; state: State }>): Readonly<{
-  actionCreators: Required<
-    {
-      [Key in keyof State]: ActionCreators.ForAny<
-        Key,
-        State[Key],
-        ActionPrefix
-      > &
-        (State[Key] extends null | undefined
-          ? {}
-          : State[Key] extends CompatibleArray<any>
-          ? ActionCreators.ForArray<State[Key], Key, ActionPrefix>
-          : State[Key] extends boolean
-          ? ActionCreators.ForBoolean<Key, ActionPrefix>
-          : State[Key] extends CompatibleObject<string, unknown>
-          ? ActionCreators.ForObject<State[Key], Key, ActionPrefix>
-          : {});
-    }
-  >;
+  actionCreators: ActionCreators.ForWholeState<State, ActionPrefix>;
   reducer: ReducerWithOptionalReturn<State, Action>;
 }> {
-  const actionCreators: CompatibleObject<string, unknown> = {};
+  const actionCreators: CompatibleObject<string, any> = {};
   let reducers: ReducerWithOptionalReturn<State, Action>[] = [];
 
   for (const stateKey in state) {
@@ -596,6 +613,18 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
 
       actionCreators[stateKey] = anyActionCreators;
       reducers.push(anyReducer);
+    }
+  }
+
+  /** Remove the state key postfix from all action creators */
+  for (const stateKey in actionCreators) {
+    const stateActionCreators = actionCreators[stateKey];
+
+    for (let creatorKey in stateActionCreators) {
+      const stateActionCreator = stateActionCreators[creatorKey];
+      delete stateActionCreators[creatorKey];
+      creatorKey = creatorKey.slice(0, creatorKey.length - stateKey.length - 1);
+      stateActionCreators[creatorKey] = stateActionCreator;
     }
   }
 

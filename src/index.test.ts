@@ -1,4 +1,5 @@
 import {
+  ActionType,
   combineReducers,
   createStatePropertyHelper,
   createStatePropertyHelpers,
@@ -246,12 +247,12 @@ describe("Redux helpers", () => {
     });
 
     // When
-    state = reducer(state, actionCreators.a.Array_push_a(0))!;
-    state = reducer(state, actionCreators.b.Boolean_set_true_b)!;
-    state = reducer(state, actionCreators.c.Object_set_property_c("a", 1))!;
-    state = reducer(state, actionCreators.d.Set_d("d"))!;
-    state = reducer(state, actionCreators.e.Set_e("e"))!;
-    state = reducer(state, actionCreators.f.Set_f("f"))!;
+    state = reducer(state, actionCreators.a.Array_push(0))!;
+    state = reducer(state, actionCreators.b.Boolean_set_true)!;
+    state = reducer(state, actionCreators.c.Object_set_property("a", 1))!;
+    state = reducer(state, actionCreators.d.Set("d"))!;
+    state = reducer(state, actionCreators.e.Set("e"))!;
+    state = reducer(state, actionCreators.f.Set("f"))!;
 
     // Then
     expect(state).toEqual({
@@ -262,6 +263,8 @@ describe("Redux helpers", () => {
       e: "e",
       f: "f",
     });
+
+    expect(actionCreators).toMatchSnapshot();
   });
 
   it("Combining reducers should work", () => {
@@ -279,5 +282,31 @@ describe("Redux helpers", () => {
     // When && Then
     expect(combined(undefined, { type: "T1" })).toEqual({ property: "1" });
     expect(combined(undefined, { type: "T2" })).toEqual({ property: "0" });
+  });
+});
+
+describe("Convenience types", () => {
+  it("Action type should work correctly", () => {
+    // Setup
+    const actionCreators = {
+      a: { type: "A" as const },
+      b: (args: string) => ({ args, type: "B" as const }),
+      c: {
+        d: { type: "D" as const },
+        e: (args: number) => ({ args, type: "E" as const }),
+      },
+    };
+
+    type Actions = ActionType<typeof actionCreators>;
+
+    function reduce(state: number, _action: Actions) {
+      return state;
+    }
+
+    // When
+    let state = reduce(0, actionCreators.a);
+    state = reduce(state, actionCreators.b(""));
+    state = reduce(state, actionCreators.c.d);
+    state = reduce(state, actionCreators.c.e(0));
   });
 });

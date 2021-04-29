@@ -78,9 +78,12 @@ const { actionCreators, reducer } = createStatePropertyHelpers({
   state: { a: [], b: true }
 });
 
-/** You can access the action creators like so */
-actionCreators.a.Array_push_a(0);
-actionCreators.b.Boolean_set_true_b;
+/** 
+ * You can access the action creators like so (note that the key postfixes have
+ * been removed since the action creators are already namespaced):
+ */
+actionCreators.a.Array_push(0);
+actionCreators.b.Boolean_set_true;
 ```
 
 ## RxJS helpers
@@ -117,7 +120,19 @@ This type extracts all actions defined in an object - for e.g.:
 ```javascript
 const actionCreators = {
   a: { type: 'A' as const },
+  /**
+   * It's able to infer function return types, so don't worry about using an
+   * action creator function.
+   */
   b: ( property: string) => ({ property, type: 'B' as const }),
+  /**
+   * It can also handle nested action creators. This works well with state
+   * property helpers.
+   */
+  c: {
+    d: { type: 'D' as const },
+    e: () => ({ type: 'E' as const })
+  }
 }
 
 type AllActionType = ActionType<typeof actionCreators>;
@@ -125,7 +140,6 @@ type AllActionType = ActionType<typeof actionCreators>;
 type AllActionType2 =
   | { type: 'A' as const } 
   | { property: string; type: 'B' as const }
+  | { type: 'D' as const }
+  | { type: 'E' as const }
 ```
-
-It's able to infer function return types, so don't worry about using an action
-creator function.
