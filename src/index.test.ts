@@ -1,8 +1,8 @@
 import {
   ActionType,
   combineReducers,
-  createStatePropertyHelper,
-  createStatePropertyHelpers,
+  createReduxComponents,
+  createBulkReduxComponents,
 } from ".";
 
 describe("Redux helpers", () => {
@@ -14,7 +14,7 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = { property: "What" };
 
-    const helper = createStatePropertyHelper<State, "property", "PREFIX">({
+    const helper = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       stateKey: "property",
     });
@@ -41,13 +41,13 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = { property2: [1, 2, 3] };
 
-    const helper1 = createStatePropertyHelper<State, "property", "PREFIX">({
+    const helper1 = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "ARRAY",
       stateKey: "property",
     });
 
-    const helper2 = createStatePropertyHelper<State, "property2", "PREFIX">({
+    const helper2 = createReduxComponents<State, "property2", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "ARRAY",
       stateKey: "property2",
@@ -143,7 +143,7 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = {};
 
-    const helper = createStatePropertyHelper<State, "property", "PREFIX">({
+    const helper = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "BOOLEAN",
       stateKey: "property",
@@ -190,7 +190,7 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = {};
 
-    const helper = createStatePropertyHelper<State, "property", "PREFIX">({
+    const helper = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "OBJECT",
       stateKey: "property",
@@ -241,7 +241,7 @@ describe("Redux helpers", () => {
       f: null,
     };
 
-    const { actionCreators, reducer } = createStatePropertyHelpers({
+    const { actionCreators, reducer } = createBulkReduxComponents({
       state,
       actionPrefix: "PREFIX",
     });

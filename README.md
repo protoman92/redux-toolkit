@@ -10,11 +10,11 @@ Not to be confused with the official [redux-toolkit](https://github.com/reduxjs/
 This library is relatively unopinionated about your specific Redux setup. It
 offers the following functionalities:
 
-## State property helpers
+## Redux components creators
 
-State property helpers automatically generate action creators and reducers for
-specific properties in a state object, and are able to handle different property
-types:
+Redux components creators automatically generate action creators and reducers
+for specific properties in a state object, and are able to handle different
+property types:
 
 ```javascript
 interface State {
@@ -28,17 +28,17 @@ const PREFIX = "PREFIX" as const;
 
 /** 
  * Since property1 is an object, there will be object-related action creators:
- * - PROPERTY_1_ACTION_CREATORS.Object_delete_property_property1
- * - PROPERTY_1_ACTION_CREATORS.Object_merge_property_property1
- * - PROPERTY_1_ACTION_CREATORS.Object_set_property_property1
+ * - property1ActionCreators.Object_delete_property_property1
+ * - property1ActionCreators.Object_merge_property_property1
+ * - property1ActionCreators.Object_set_property_property1
  * Similarly, different property types will have different action creators.
  * The convention of the generated names is:
  * `${PREFIX}_(Array|Boolean|Object)_(action)_${StateKey}
  */
 const {
-  actionCreators: PROPERTY_1_ACTION_CREATORS,
-  reducer: PROPERTY_1_REDUCER,
-} = createStatePropertyHelper<
+  actionCreators: property1ActionCreators,
+  reducer: property1Reducer,
+} = createReduxComponents<
   State,
   "property1",
   typeof PREFIX
@@ -50,16 +50,16 @@ const {
 
 /** Set up the other action creators */
 const allActionCreators = {
-  ...PROPERTY_1_ACTION_CREATORS,
-  ...PROPERTY_2_ACTION_CREATORS,
-  ...PROPERTY_3_ACTION_CREATORS,
+  ...property1ActionCreators,
+  ...property2ActionCreators,
+  ...property3ActionCreators,
 }
 
 const reducer = combineReducer(
   defaultState,
-  PROPERTY_1_REDUCER,
-  PROPERTY_2_REDUCER,
-  PROPERTY_3_REDUCER
+  property1Reducer,
+  property2Reducer,
+  property3Reducer
 )
 ```
 
@@ -69,11 +69,11 @@ If you have a default state object, such as:
 const defaultState = { a: 1, b: 2 };
 ```
 
-You can also use `createStatePropertyHelpers` to automatically provide action
+You can also use `createBulkReduxComponents` to automatically provide action
 creators and reducer for all eligible properties:
 
 ```javascript
-const { actionCreators, reducer } = createStatePropertyHelpers({
+const { actionCreators, reducer } = createBulkReduxComponents({
   actionPrefix: PREFIX,
   state: { a: [], b: true }
 });

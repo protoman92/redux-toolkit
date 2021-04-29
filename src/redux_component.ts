@@ -261,7 +261,7 @@ type StatePropertyHelper<
   reducer: ReducerWithOptionalReturn<State, Action>;
 };
 
-type createStatePropertyHelperArgs<
+type createReduxComponentsArgs<
   State,
   StateKey extends keyof State,
   ActionPrefix extends string
@@ -290,7 +290,7 @@ function isOfType<T extends { type: string }>(
   return obj["type"] === typeToCheck;
 }
 
-export function createStatePropertyHelper<
+export function createReduxComponents<
   State,
   StateKey extends keyof State,
   ActionPrefix extends string
@@ -298,7 +298,7 @@ export function createStatePropertyHelper<
   actionPrefix,
   propertyType,
   stateKey,
-}: createStatePropertyHelperArgs<
+}: createReduxComponentsArgs<
   State,
   StateKey,
   ActionPrefix
@@ -553,7 +553,7 @@ export function createStatePropertyHelper<
   } as unknown) as StatePropertyHelper<State, StateKey, ActionPrefix>;
 }
 
-export function createStatePropertyHelpers<State, ActionPrefix extends string>({
+export function createBulkReduxComponents<State, ActionPrefix extends string>({
   actionPrefix,
   state,
 }: Readonly<{ actionPrefix: ActionPrefix; state: State }>): Readonly<{
@@ -570,7 +570,7 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
       const {
         actionCreators: arrayActionCreators,
         reducer: arrayReducer,
-      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+      } = createReduxComponents<State, keyof State, ActionPrefix>({
         stateKey,
         actionPrefix,
         propertyType: "ARRAY",
@@ -582,7 +582,7 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
       const {
         actionCreators: booleanActionCreators,
         reducer: booleanReducer,
-      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+      } = createReduxComponents<State, keyof State, ActionPrefix>({
         stateKey,
         actionPrefix,
         propertyType: "BOOLEAN",
@@ -594,7 +594,7 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
       const {
         actionCreators: objectActionCreators,
         reducer: objectReducer,
-      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+      } = createReduxComponents<State, keyof State, ActionPrefix>({
         actionPrefix,
         propertyType: "OBJECT",
         stateKey: stateKey as keyof State,
@@ -606,7 +606,7 @@ export function createStatePropertyHelpers<State, ActionPrefix extends string>({
       const {
         actionCreators: anyActionCreators,
         reducer: anyReducer,
-      } = createStatePropertyHelper<State, keyof State, ActionPrefix>({
+      } = createReduxComponents<State, keyof State, ActionPrefix>({
         actionPrefix,
         stateKey: stateKey as keyof State,
       } as any);
