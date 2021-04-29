@@ -72,7 +72,7 @@ const defaultState = { a: 1, b: 2 };
 You can also use `createStatePropertyHelpers` to automatically provide action
 creators and reducer for all eligible properties:
 
-```
+```javascript
 const { actionCreators, reducer } = createStatePropertyHelpers({
   actionPrefix: PREFIX,
   state: { a: [], b: true }
