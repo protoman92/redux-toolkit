@@ -66,15 +66,25 @@ const reducer = combineReducer(
 If you have a default state object, such as:
 
 ```javascript
-const defaultState = { a: 1, b: 2, c: undefined };
+interface State {
+  a: number;
+  b: number;
+  c: boolean | undefined
+}
+
+const defaultState: State = { a: 1, b: 2, c: undefined };
 ```
 
 You can also use `createBulkReduxComponents` to automatically provide action
 creators and reducer for all eligible properties:
 
 ```javascript
-const { actionCreators, reducer } = createBulkReduxComponents({
-  actionPrefix: PREFIX,
+/** 
+ * Explicit types are required when we use this function because it needs to 
+ * infer the type suggestions.
+ */
+const { actionCreators, reducer } = createBulkReduxComponents<State, 'PREFIX'>({
+  actionPrefix: 'PREFIX',
   state: { a: [], b: true },
   /** 
    * For eligible properties that can be null/undefined, you will need to 
