@@ -151,8 +151,9 @@ const actionCreators = {
    */
   b: ( property: string) => ({ property, type: 'B' as const }),
   /**
-   * It can also handle nested action creators. This works well with state
-   * property helpers.
+   * It can also handle nested action creators. This works well with bulk
+   * redux components, because the resulting action creators object consists
+   * of other action creators namespaced by state keys.
    */
   c: {
     d: { type: 'D' as const },
