@@ -2,9 +2,26 @@ import { Action } from "redux";
 import { combineOptionalReducers, ReducerWithOptionalReturn } from "./reducer";
 import { shallowCloneArray } from "./utils";
 
+/** Use these property types to avoid adding unnecessary action creators */
+const TYPE_PROPERTY_ARRAY = "ARRAY";
+const TYPE_PROPERTY_BOOLEAN = "BOOLEAN";
+const TYPE_PROPERTY_OBJECT = "OBJECT";
+
+function isOfType<T extends { type: string }>(
+  obj: Readonly<{ type: string }>,
+  typeToCheck: string
+): obj is T {
+  return obj["type"] === typeToCheck;
+}
+
 type Neverable<T> = T | null | undefined;
 type CompatibleArray<T> = T[] | readonly T[];
 type CompatibleObject<K extends string, V> = { [x in Extract<K, string>]: V };
+
+type SupportedTypes =
+  | CompatibleArray<unknown>
+  | boolean
+  | CompatibleObject<string, unknown>;
 
 type ArrayPushAction<
   StateKey,
@@ -118,7 +135,7 @@ type SetAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
   value: StateValue;
 }>;
 
-namespace ActionCreators {
+export namespace ActionCreators {
   export type ForAny<StateKey, StateValue, ActionPrefix extends string> = {
     [x in `Delete${Extract<StateKey, string>}`]: DeleteAction<
       StateKey,
@@ -200,21 +217,61 @@ namespace ActionCreators {
       ) => ObjectSetPropertyAction<StateKey, StateValue, ActionPrefix>;
     };
 
-  export type ForWholeState<State, ActionPrefix extends string> = Required<
+  export namespace ForWholeState {
+    export type TypeSuggestionRequiredKeys<State> = Exclude<
+      {
+        [Key in keyof State]: State[Key] extends SupportedTypes
+          ? undefined
+          : State[Key] extends Neverable<infer StateValue>
+          ? StateValue extends SupportedTypes
+            ? Key
+            : undefined
+          : undefined;
+      }[keyof State],
+      undefined
+    >;
+
+    export type TypeSuggestion<State> = {
+      [Key in TypeSuggestionRequiredKeys<State>]: State[Key] extends Neverable<
+        infer StateValue
+      >
+        ? StateValue extends CompatibleArray<unknown>
+          ? typeof TYPE_PROPERTY_ARRAY
+          : StateValue extends boolean
+          ? typeof TYPE_PROPERTY_BOOLEAN
+          : StateValue extends CompatibleObject<string, unknown>
+          ? typeof TYPE_PROPERTY_OBJECT
+          : undefined
+        : undefined;
+    };
+
+    export type ActionCreatorForProperty<
+      StateValue,
+      ActionPrefix extends string
+    > = StateValue extends CompatibleArray<any>
+      ? ActionCreators.ForArray<"", StateValue, ActionPrefix>
+      : StateValue extends boolean
+      ? ActionCreators.ForBoolean<"", ActionPrefix>
+      : StateValue extends CompatibleObject<string, unknown>
+      ? ActionCreators.ForObject<"", StateValue, ActionPrefix>
+      : {};
+  }
+
+  export type ForWholeState<
+    State,
+    ActionPrefix extends string,
+    TypeSuggestion extends ForWholeState.TypeSuggestion<State> | undefined
+  > = Required<
     {
       [Key in keyof State]: ActionCreators.ForAny<
         "",
         State[Key],
         ActionPrefix
       > &
-        (State[Key] extends null | undefined
-          ? {}
-          : State[Key] extends CompatibleArray<any>
-          ? ActionCreators.ForArray<"", State[Key], ActionPrefix>
-          : State[Key] extends boolean
-          ? ActionCreators.ForBoolean<"", ActionPrefix>
-          : State[Key] extends CompatibleObject<string, unknown>
-          ? ActionCreators.ForObject<"", State[Key], ActionPrefix>
+        (TypeSuggestion extends undefined
+          ? ForWholeState.ActionCreatorForProperty<State[Key], ActionPrefix>
+          : State[Key] extends Neverable<infer StateValue>
+          ? ForWholeState.ActionCreatorForProperty<StateValue, ActionPrefix>
           : {});
     }
   >;
@@ -261,33 +318,23 @@ type StatePropertyHelper<
   reducer: ReducerWithOptionalReturn<State, Action>;
 };
 
-type createReduxComponentsArgs<
-  State,
-  StateKey extends keyof State,
-  ActionPrefix extends string
-> = Readonly<
-  {
-    actionPrefix: ActionPrefix;
-    stateKey: StateKey;
-  } & (State[StateKey] extends Neverable<CompatibleArray<unknown>>
-    ? { propertyType: typeof TYPE_PROPERTY_ARRAY }
-    : State[StateKey] extends Neverable<boolean>
-    ? { propertyType: typeof TYPE_PROPERTY_BOOLEAN }
-    : State[StateKey] extends Neverable<CompatibleObject<string, unknown>>
-    ? { propertyType: typeof TYPE_PROPERTY_OBJECT }
-    : { propertyType?: undefined })
->;
-
-/** Use these property types to avoid adding unnecessary action creators */
-const TYPE_PROPERTY_ARRAY = "ARRAY";
-const TYPE_PROPERTY_BOOLEAN = "BOOLEAN";
-const TYPE_PROPERTY_OBJECT = "OBJECT";
-
-function isOfType<T extends { type: string }>(
-  obj: Readonly<{ type: string }>,
-  typeToCheck: string
-): obj is T {
-  return obj["type"] === typeToCheck;
+namespace CreateReduxComponents {
+  export type Arguments<
+    State,
+    StateKey extends keyof State,
+    ActionPrefix extends string
+  > = Readonly<
+    {
+      actionPrefix: ActionPrefix;
+      stateKey: StateKey;
+    } & (State[StateKey] extends Neverable<CompatibleArray<unknown>>
+      ? { propertyType: typeof TYPE_PROPERTY_ARRAY }
+      : State[StateKey] extends Neverable<boolean>
+      ? { propertyType: typeof TYPE_PROPERTY_BOOLEAN }
+      : State[StateKey] extends Neverable<CompatibleObject<string, unknown>>
+      ? { propertyType: typeof TYPE_PROPERTY_OBJECT }
+      : { propertyType?: undefined })
+  >;
 }
 
 export function createReduxComponents<
@@ -298,7 +345,7 @@ export function createReduxComponents<
   actionPrefix,
   propertyType,
   stateKey,
-}: createReduxComponentsArgs<
+}: CreateReduxComponents.Arguments<
   State,
   StateKey,
   ActionPrefix
@@ -553,20 +600,59 @@ export function createReduxComponents<
   } as unknown) as StatePropertyHelper<State, StateKey, ActionPrefix>;
 }
 
+namespace CreateBulkReduxComponents {
+  export type Arguments<State, ActionPrefix extends string> = Readonly<
+    {
+      actionPrefix: ActionPrefix;
+      state: State;
+    } & (ActionCreators.ForWholeState.TypeSuggestionRequiredKeys<State> extends never
+      ? { typeSuggestions?: undefined }
+      : { typeSuggestions: ActionCreators.ForWholeState.TypeSuggestion<State> })
+  >;
+}
+
 export function createBulkReduxComponents<State, ActionPrefix extends string>({
   actionPrefix,
   state,
-}: Readonly<{ actionPrefix: ActionPrefix; state: State }>): Readonly<{
-  actionCreators: ActionCreators.ForWholeState<State, ActionPrefix>;
+  typeSuggestions = {} as any,
+}: CreateBulkReduxComponents.Arguments<State, ActionPrefix>): Readonly<{
+  actionCreators: ActionCreators.ForWholeState<
+    State,
+    ActionPrefix,
+    CreateBulkReduxComponents.Arguments<State, ActionPrefix>["typeSuggestions"]
+  >;
   reducer: ReducerWithOptionalReturn<State, Action>;
 }> {
+  const anyState = ({ ...state } as unknown) as CompatibleObject<
+    string,
+    State[keyof State] | undefined
+  >;
+
+  const anyTypeSuggestions = { ...typeSuggestions } as CompatibleObject<
+    string,
+    string | undefined
+  >;
+
   const actionCreators: CompatibleObject<string, any> = {};
   let reducers: ReducerWithOptionalReturn<State, Action>[] = [];
 
-  for (const stateKey in state) {
-    const stateValue = state[stateKey];
+  /**
+   * There might be missing properties from the default state, esp. if some
+   * properties are optional. Since we know those keys will definitely be
+   * present in the type suggestion object, we initialize them in the main
+   * state object with placeholder values.
+   */
+  for (const stateKey in anyTypeSuggestions) {
+    if (anyState[stateKey] == null) anyState[stateKey] = undefined;
+  }
 
-    if (stateValue instanceof Array) {
+  for (const stateKey in anyState) {
+    const stateValue = anyState[stateKey];
+
+    if (
+      stateValue instanceof Array ||
+      anyTypeSuggestions[stateKey] === TYPE_PROPERTY_ARRAY
+    ) {
       const {
         actionCreators: arrayActionCreators,
         reducer: arrayReducer,
@@ -578,7 +664,10 @@ export function createBulkReduxComponents<State, ActionPrefix extends string>({
 
       actionCreators[stateKey] = arrayActionCreators;
       reducers.push(arrayReducer);
-    } else if (typeof stateValue === "boolean") {
+    } else if (
+      typeof stateValue === "boolean" ||
+      anyTypeSuggestions[stateKey] === TYPE_PROPERTY_BOOLEAN
+    ) {
       const {
         actionCreators: booleanActionCreators,
         reducer: booleanReducer,
@@ -590,14 +679,17 @@ export function createBulkReduxComponents<State, ActionPrefix extends string>({
 
       actionCreators[stateKey] = booleanActionCreators;
       reducers.push(booleanReducer);
-    } else if (typeof stateValue === "object") {
+    } else if (
+      typeof stateValue === "object" ||
+      anyTypeSuggestions[stateKey] === TYPE_PROPERTY_OBJECT
+    ) {
       const {
         actionCreators: objectActionCreators,
         reducer: objectReducer,
       } = createReduxComponents<State, keyof State, ActionPrefix>({
+        stateKey,
         actionPrefix,
         propertyType: "OBJECT",
-        stateKey: stateKey as keyof State,
       } as any);
 
       actionCreators[stateKey] = objectActionCreators;
@@ -607,8 +699,8 @@ export function createBulkReduxComponents<State, ActionPrefix extends string>({
         actionCreators: anyActionCreators,
         reducer: anyReducer,
       } = createReduxComponents<State, keyof State, ActionPrefix>({
+        stateKey,
         actionPrefix,
-        stateKey: stateKey as keyof State,
       } as any);
 
       actionCreators[stateKey] = anyActionCreators;

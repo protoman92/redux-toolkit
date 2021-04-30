@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "allowJs": true,
+    "allowJs": false,
     "alwaysStrict": true,
-    "checkJs": true,
+    "checkJs": false,
     "esModuleInterop": true,
     "jsx": "react",
     "module": "commonjs",

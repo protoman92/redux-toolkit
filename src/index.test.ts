@@ -1,12 +1,12 @@
 import {
   ActionType,
   combineReducers,
-  createReduxComponents,
   createBulkReduxComponents,
+  createReduxComponents,
 } from ".";
 
-describe("Redux helpers", () => {
-  it("Helper should work correctly", async () => {
+describe("Redux components", () => {
+  it("Basic redux components should work correctly", async () => {
     // Setup
     interface State {
       property: string;
@@ -14,24 +14,24 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = { property: "What" };
 
-    const helper = createReduxComponents<State, "property", "PREFIX">({
+    const rc = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       stateKey: "property",
     });
 
     // When && Then 1
-    state = helper.reducer(state, helper.actionCreators.Set_property("NV"));
+    state = rc.reducer(state, rc.actionCreators.Set_property("NV"));
     expect(state?.property).toEqual("NV");
 
     // When && Then 2
-    state = helper.reducer(state!, helper.actionCreators.Delete_property);
+    state = rc.reducer(state!, rc.actionCreators.Delete_property);
     expect(state?.property).toBeUndefined();
 
     // When && Then 3
-    expect(helper.reducer(state!, {} as any)).toBeUndefined();
+    expect(rc.reducer(state!, {} as any)).toBeUndefined();
   });
 
-  it("Helper for array state should work correctly", async () => {
+  it("Redux components for array state should work correctly", async () => {
     // Setup
     interface State {
       nonArray?: boolean;
@@ -41,30 +41,30 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = { property2: [1, 2, 3] };
 
-    const helper1 = createReduxComponents<State, "property", "PREFIX">({
+    const rc1 = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "ARRAY",
       stateKey: "property",
     });
 
-    const helper2 = createReduxComponents<State, "property2", "PREFIX">({
+    const rc2 = createReduxComponents<State, "property2", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "ARRAY",
       stateKey: "property2",
     });
 
     // When && Then 1
-    state = helper1.reducer(
+    state = rc1.reducer(
       state!,
-      helper1.actionCreators.Array_push_property({
+      rc1.actionCreators.Array_push_property({
         a: "some-value-2",
         b: "checkable",
       })
     );
 
-    state = helper1.reducer(
+    state = rc1.reducer(
       state!,
-      helper1.actionCreators.Array_unshift_property({ a: "some-value-1" })
+      rc1.actionCreators.Array_unshift_property({ a: "some-value-1" })
     );
 
     expect(state?.property).toEqual([
@@ -73,43 +73,43 @@ describe("Redux helpers", () => {
     ]);
 
     // When && Then 2
-    state = helper1.reducer(
+    state = rc1.reducer(
       state!,
-      helper1.actionCreators.Array_replace_property({
+      rc1.actionCreators.Array_replace_property({
         propertyToCheckEquality: "b",
         value: { a: "some-value-3", b: "checkable" },
       })
     );
 
-    state = helper1.reducer(
+    state = rc1.reducer(
       state!,
-      helper1.actionCreators.Array_replace_property({
+      rc1.actionCreators.Array_replace_property({
         predicate: (...[, index]) => index === 0,
         value: { a: "some-value-4" },
       })
     );
 
-    state = helper1.reducer(
+    state = rc1.reducer(
       state!,
-      helper1.actionCreators.Array_replace_property({
+      rc1.actionCreators.Array_replace_property({
         index: 2,
         value: { a: "some-value-5" },
       })
     );
 
     /** This should not update, since there is no matching property */
-    state = helper1.reducer(
+    state = rc1.reducer(
       state!,
-      helper1.actionCreators.Array_replace_property({
+      rc1.actionCreators.Array_replace_property({
         propertyToCheckEquality: "b",
         value: { a: "some-value-3", b: "unmatchable-1" },
       })
     );
 
     /** This should not update, since there is no matching mechanism provided */
-    state = helper1.reducer(
+    state = rc1.reducer(
       state!,
-      helper1.actionCreators.Array_replace_property({
+      rc1.actionCreators.Array_replace_property({
         value: { a: "some-value-3", b: "unmatchable-2" },
       } as any)
     );
@@ -121,21 +121,21 @@ describe("Redux helpers", () => {
     ]);
 
     // When && Then 3
-    state = helper2.reducer(
+    state = rc2.reducer(
       state!,
-      helper2.actionCreators.Array_remove_property2({ index: 1 })
+      rc2.actionCreators.Array_remove_property2({ index: 1 })
     );
 
     expect(state?.property2).toEqual([1, 3]);
 
     /** This should not do anything, since the index is out of bound */
-    state = helper2.reducer(
+    state = rc2.reducer(
       state!,
-      helper2.actionCreators.Array_remove_property2({ index: 10 })
+      rc2.actionCreators.Array_remove_property2({ index: 10 })
     );
   });
 
-  it("Helper for boolean state should work correctly", async () => {
+  it("Redux components for boolean state should work correctly", async () => {
     // Setup
     interface State {
       property?: boolean | null;
@@ -143,46 +143,30 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = {};
 
-    const helper = createReduxComponents<State, "property", "PREFIX">({
+    const rc = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "BOOLEAN",
       stateKey: "property",
     });
 
     // When && Then 1
-    state = helper.reducer(
-      state!,
-      helper.actionCreators.Boolean_toggle_property
-    );
-
+    state = rc.reducer(state!, rc.actionCreators.Boolean_toggle_property);
     expect(state?.property).toEqual(true);
 
     // When && Then 2
-    state = helper.reducer(
-      state!,
-      helper.actionCreators.Boolean_toggle_property
-    );
-
+    state = rc.reducer(state!, rc.actionCreators.Boolean_toggle_property);
     expect(state?.property).toEqual(false);
 
     // When && Then 3
-    state = helper.reducer(
-      state!,
-      helper.actionCreators.Boolean_set_true_property
-    );
-
+    state = rc.reducer(state!, rc.actionCreators.Boolean_set_true_property);
     expect(state?.property).toEqual(true);
 
     // When && Then 4
-    state = helper.reducer(
-      state!,
-      helper.actionCreators.Boolean_set_false_property
-    );
-
+    state = rc.reducer(state!, rc.actionCreators.Boolean_set_false_property);
     expect(state?.property).toEqual(false);
   });
 
-  it("Helper for object state should work correctly", async () => {
+  it("Redux components for object state should work correctly", async () => {
     // Setup
     interface State {
       property?: { a: string; b?: number };
@@ -190,38 +174,38 @@ describe("Redux helpers", () => {
 
     let state: State | undefined = {};
 
-    const helper = createReduxComponents<State, "property", "PREFIX">({
+    const rc = createReduxComponents<State, "property", "PREFIX">({
       actionPrefix: "PREFIX",
       propertyType: "OBJECT",
       stateKey: "property",
     });
 
     // When && Then 1
-    state = helper.reducer(
+    state = rc.reducer(
       state!,
-      helper.actionCreators.Object_set_property_property("a", "some-value-a")
+      rc.actionCreators.Object_set_property_property("a", "some-value-a")
     );
 
     expect(state?.property).toEqual({ a: "some-value-a" });
 
     // When && Then 2
-    state = helper.reducer(
+    state = rc.reducer(
       state!,
-      helper.actionCreators.Object_delete_property_property("a")
+      rc.actionCreators.Object_delete_property_property("a")
     );
 
     expect(state?.property).toEqual({});
 
     // When && Then 3
-    state = helper.reducer(
+    state = rc.reducer(
       state!,
-      helper.actionCreators.Object_merge_property_property({ b: 100 })
+      rc.actionCreators.Object_merge_property_property({ b: 100 })
     );
 
     expect(state?.property).toEqual({ b: 100 });
   });
 
-  it("Helpers for state object should work correctly", async () => {
+  it("Redux components for state object should work correctly", async () => {
     // Setup
     interface State {
       a: number[];
@@ -230,6 +214,10 @@ describe("Redux helpers", () => {
       d: string;
       e?: string | undefined;
       f: string | null;
+      g?: boolean | null;
+      h?: string[] | null;
+      i?: { a?: number };
+      j?: boolean;
     }
 
     let state: State | undefined = {
@@ -239,11 +227,16 @@ describe("Redux helpers", () => {
       d: "",
       e: undefined,
       f: null,
+      j: true,
     };
 
-    const { actionCreators, reducer } = createBulkReduxComponents({
+    const { actionCreators, reducer } = createBulkReduxComponents<
+      State,
+      "PREFIX"
+    >({
       state,
       actionPrefix: "PREFIX",
+      typeSuggestions: { g: "BOOLEAN", h: "ARRAY", i: "OBJECT", j: "BOOLEAN" },
     });
 
     // When
@@ -253,6 +246,10 @@ describe("Redux helpers", () => {
     state = reducer(state, actionCreators.d.Set("d"))!;
     state = reducer(state, actionCreators.e.Set("e"))!;
     state = reducer(state, actionCreators.f.Set("f"))!;
+    state = reducer(state, actionCreators.g.Boolean_set_true)!;
+    state = reducer(state, actionCreators.h.Array_push("h"))!;
+    state = reducer(state, actionCreators.i.Object_set_property("a", 1))!;
+    state = reducer(state, actionCreators.j.Boolean_set_false)!;
 
     // Then
     expect(state).toEqual({
@@ -262,9 +259,26 @@ describe("Redux helpers", () => {
       d: "d",
       e: "e",
       f: "f",
+      g: true,
+      h: ["h"],
+      i: { a: 1 },
+      j: false,
     });
 
     expect(actionCreators).toMatchSnapshot();
+  });
+
+  it("Redux components with all eligible state values should not require type suggestions", () => {
+    interface State {
+      a: number[];
+      b: boolean;
+      c: { a?: number; b?: string };
+    }
+
+    createBulkReduxComponents<State, "PREFIX">({
+      state: { a: [], b: false, c: {} },
+      actionPrefix: "PREFIX",
+    });
   });
 
   it("Combining reducers should work", () => {

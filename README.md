@@ -66,7 +66,7 @@ const reducer = combineReducer(
 If you have a default state object, such as:
 
 ```javascript
-const defaultState = { a: 1, b: 2 };
+const defaultState = { a: 1, b: 2, c: undefined };
 ```
 
 You can also use `createBulkReduxComponents` to automatically provide action
@@ -75,7 +75,17 @@ creators and reducer for all eligible properties:
 ```javascript
 const { actionCreators, reducer } = createBulkReduxComponents({
   actionPrefix: PREFIX,
-  state: { a: [], b: true }
+  state: { a: [], b: true },
+  /** 
+   * For eligible properties that can be null/undefined, you will need to 
+   * provide a typeSuggestions object in order to hint at the property's type.
+   * This is required because we are not able to ascertain their actual types
+   * during runtime if they are initialized with null/undefined.
+   * 
+   * If you don't have any property that can be null/undefined, typeSuggestions
+   * can be safely omitted. 
+   */
+  typeSuggestions: { c: 'BOOLEAN' }
 });
 
 /** 
@@ -84,6 +94,11 @@ const { actionCreators, reducer } = createBulkReduxComponents({
  */
 actionCreators.a.Array_push(0);
 actionCreators.b.Boolean_set_true;
+/** 
+ * Even if we initialized c with undefined, we are still able to use these
+ * action creators. 
+ */
+actionCreators.c.Boolean_set_false;
 ```
 
 ## RxJS helpers

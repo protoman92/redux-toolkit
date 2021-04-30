@@ -8,6 +8,7 @@
     "redux": "*",
     "rxjs": "*",
     "ts-jest": "*",
+    "ts-essentials": "*",
     "typescript": "*",
     "webpack": "*",
     "webpack-cli": "*",
@@ -34,6 +35,7 @@
     "webpack-merge": "4.2.2"
   },
   "scripts": {
+    "build": "tsc",
     "coveralls": "coveralls < coverage/lcov.info",
     "test": "jest"
   },
