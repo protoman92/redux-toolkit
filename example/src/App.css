@@ -1,0 +1,13 @@
+.App {
+  display: flex;
+  flex-direction: column;
+  padding: 0.8rem;
+}
+
+.App > * {
+  min-height: 2.4rem;
+}
+
+.App > *:not(:first-child) {
+  margin-top: 0.8rem;
+}
