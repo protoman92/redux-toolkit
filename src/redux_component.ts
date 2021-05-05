@@ -123,22 +123,35 @@ type ObjectSetPropertyAction<
   value: StateValue[keyof StateValue];
 }>;
 
+type MapAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
+  mapper: (current: StateValue) => StateValue;
+  type: `${ActionPrefix}_map_${Extract<StateKey, string>}`;
+}>;
+
 type SetAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
   type: `${ActionPrefix}_set_${Extract<StateKey, string>}`;
   value: StateValue;
 }>;
 
 type ActionCreatorsForAny<StateKey, StateValue, ActionPrefix extends string> = {
-  [x in `Delete${Extract<StateKey, string>}`]: DeleteAction<
-    StateKey,
-    ActionPrefix
-  >;
+  [x in `Map${Extract<StateKey, string>}`]: (
+    mapper: MapAction<StateKey, StateValue, ActionPrefix>["mapper"]
+  ) => MapAction<StateKey, StateValue, ActionPrefix>;
 } &
   {
     [x in `Set${Extract<StateKey, string>}`]: (
       value: StateValue
     ) => SetAction<StateKey, StateValue, ActionPrefix>;
-  };
+  } &
+  /** Only support delete action if the state value can be undefined */
+  (undefined extends StateValue
+    ? {
+        [x in `Delete${Extract<StateKey, string>}`]: DeleteAction<
+          StateKey,
+          ActionPrefix
+        >;
+      }
+    : {});
 
 type ActionCreatorsForArray<
   StateKey,
@@ -268,28 +281,28 @@ type StatePropertyHelper<
   ActionPrefix extends string
 > = {
   actionCreators: Readonly<
-    (State[StateKey] extends Neverable<infer A>
-      ? A extends CompatibleArray<unknown>
+    (State[StateKey] extends Neverable<infer StateValue>
+      ? StateValue extends CompatibleArray<unknown>
         ? ActionCreatorsForArray<
             `_${Extract<StateKey, string>}`,
-            A,
+            StateValue,
             ActionPrefix
           >
         : {}
       : {}) &
-      (State[StateKey] extends Neverable<infer B>
-        ? B extends boolean
+      (State[StateKey] extends Neverable<infer StateValue>
+        ? StateValue extends boolean
           ? ActionCreatorsForBoolean<
               `_${Extract<StateKey, string>}`,
               ActionPrefix
             >
           : {}
         : {}) &
-      (State[StateKey] extends Neverable<infer O>
-        ? O extends CompatibleObject<string, unknown>
+      (State[StateKey] extends Neverable<infer StateValue>
+        ? StateValue extends CompatibleObject<string, unknown>
           ? ActionCreatorsForObject<
               `_${Extract<StateKey, string>}`,
-              O,
+              StateValue,
               ActionPrefix
             >
           : {}
@@ -406,6 +419,9 @@ export function createReduxComponents<
           }
         : {}),
       [`Delete_${stateKey}`]: { type: `${actionPrefix}_delete_${stateKey}` },
+      [`Map_${stateKey}`]: (
+        mapper: MapAction<StateKey, State[StateKey], ActionPrefix>["mapper"]
+      ) => ({ mapper, type: `${actionPrefix}_map_${stateKey}` }),
       [`Set_${stateKey}`]: (value: State[StateKey]) => ({
         value,
         type: `${actionPrefix}_set_${stateKey}`,
@@ -571,9 +587,14 @@ export function createReduxComponents<
           )
         ) {
           return { ...state, [stateKey]: action.value };
-        }
-
-        if (
+        } else if (
+          isOfType<MapAction<StateKey, State[StateKey], ActionPrefix>>(
+            action,
+            `${actionPrefix}_map_${stateKey}`
+          )
+        ) {
+          return { ...state, [stateKey]: action.mapper(state[stateKey]) };
+        } else if (
           isOfType<DeleteAction<StateKey, ActionPrefix>>(
             action,
             `${actionPrefix}_delete_${stateKey}`

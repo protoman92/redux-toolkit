@@ -9,7 +9,7 @@ describe("Redux components", () => {
   it("Basic redux components should work correctly", async () => {
     // Setup
     interface State {
-      property: string;
+      property?: string | null;
     }
 
     let state: State | undefined = { property: "What" };
@@ -24,10 +24,18 @@ describe("Redux components", () => {
     expect(state?.property).toEqual("NV");
 
     // When && Then 2
+    state = rc.reducer(
+      state!,
+      rc.actionCreators.Map_property((current) => `${current}${current}`)
+    );
+
+    expect(state?.property).toEqual("NVNV");
+
+    // When && Then 3
     state = rc.reducer(state!, rc.actionCreators.Delete_property);
     expect(state?.property).toBeUndefined();
 
-    // When && Then 3
+    // When && Then 4
     expect(rc.reducer(state!, {} as any)).toBeUndefined();
   });
 

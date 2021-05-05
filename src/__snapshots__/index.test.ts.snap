@@ -10,6 +10,7 @@ Object {
     "Delete": Object {
       "type": "PREFIX_delete_a",
     },
+    "Map": [Function],
     "Set": [Function],
   },
   "b": Object {
@@ -25,12 +26,14 @@ Object {
     "Delete": Object {
       "type": "PREFIX_delete_b",
     },
+    "Map": [Function],
     "Set": [Function],
   },
   "c": Object {
     "Delete": Object {
       "type": "PREFIX_delete_c",
     },
+    "Map": [Function],
     "Object_delete_property": [Function],
     "Object_merge": [Function],
     "Object_set_property": [Function],
@@ -40,18 +43,21 @@ Object {
     "Delete": Object {
       "type": "PREFIX_delete_d",
     },
+    "Map": [Function],
     "Set": [Function],
   },
   "e": Object {
     "Delete": Object {
       "type": "PREFIX_delete_e",
     },
+    "Map": [Function],
     "Set": [Function],
   },
   "f": Object {
     "Delete": Object {
       "type": "PREFIX_delete_f",
     },
+    "Map": [Function],
     "Object_delete_property": [Function],
     "Object_merge": [Function],
     "Object_set_property": [Function],
@@ -70,6 +76,7 @@ Object {
     "Delete": Object {
       "type": "PREFIX_delete_g",
     },
+    "Map": [Function],
     "Set": [Function],
   },
   "h": Object {
@@ -80,12 +87,14 @@ Object {
     "Delete": Object {
       "type": "PREFIX_delete_h",
     },
+    "Map": [Function],
     "Set": [Function],
   },
   "i": Object {
     "Delete": Object {
       "type": "PREFIX_delete_i",
     },
+    "Map": [Function],
     "Object_delete_property": [Function],
     "Object_merge": [Function],
     "Object_set_property": [Function],
@@ -104,6 +113,7 @@ Object {
     "Delete": Object {
       "type": "PREFIX_delete_j",
     },
+    "Map": [Function],
     "Set": [Function],
   },
 }
