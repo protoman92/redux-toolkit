@@ -22,5 +22,6 @@
     "strictPropertyInitialization": true,
     "target": "es2017",
     "types": ["jest"]
-  }
+  },
+  "exclude": ["./example"]
 }
