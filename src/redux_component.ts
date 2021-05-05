@@ -110,13 +110,13 @@ type ObjectDeletePropertyAction<
   type: `${ActionPrefix}_object_delete_property_${Extract<StateKey, string>}`;
 }>;
 
-type ObjectMergePropertyAction<
+type ObjectMergeAction<
   StateKey,
   StateValue extends CompatibleObject<string, unknown>,
   ActionPrefix extends string
 > = Readonly<
   {
-    type: `${ActionPrefix}_object_merge_property_${Extract<StateKey, string>}`;
+    type: `${ActionPrefix}_object_merge_${Extract<StateKey, string>}`;
   } & Partial<StateValue>
 >;
 
@@ -204,9 +204,9 @@ export namespace ActionCreators {
     ) => ObjectDeletePropertyAction<StateKey, StateValue, ActionPrefix>;
   } &
     {
-      [x in `Object_merge_property${Extract<StateKey, string>}`]: (
+      [x in `Object_merge${Extract<StateKey, string>}`]: (
         obj: Partial<StateValue>
-      ) => ObjectMergePropertyAction<StateKey, StateValue, ActionPrefix>;
+      ) => ObjectMergeAction<StateKey, StateValue, ActionPrefix>;
     } &
     {
       [x in `Object_set_property${Extract<StateKey, string>}`]: <
@@ -401,9 +401,9 @@ export function createReduxComponents<
               key,
               type: `${actionPrefix}_object_delete_property_${stateKey}`,
             }),
-            [`Object_merge_property_${stateKey}`]: (obj: object) => ({
+            [`Object_merge_${stateKey}`]: (obj: object) => ({
               ...obj,
-              type: `${actionPrefix}_object_merge_property_${stateKey}`,
+              type: `${actionPrefix}_object_merge_${stateKey}`,
             }),
             [`Object_set_property_${stateKey}`]: (
               key: string,
@@ -550,9 +550,9 @@ export function createReduxComponents<
                 delete objectState[action.key];
                 return { ...state, [stateKey]: objectState };
               } else if (
-                isOfType<ObjectMergePropertyAction<StateKey, {}, ActionPrefix>>(
+                isOfType<ObjectMergeAction<StateKey, {}, ActionPrefix>>(
                   action,
-                  `${actionPrefix}_object_merge_property_${stateKey}`
+                  `${actionPrefix}_object_merge_${stateKey}`
                 )
               ) {
                 const { type, ...mergeObj } = action;

@@ -199,7 +199,7 @@ describe("Redux components", () => {
     // When && Then 3
     state = rc.reducer(
       state!,
-      rc.actionCreators.Object_merge_property_property({ b: 100 })
+      rc.actionCreators.Object_merge_property({ b: 100 })
     );
 
     expect(state?.property).toEqual({ b: 100 });
@@ -249,6 +249,7 @@ describe("Redux components", () => {
     state = reducer(state, actionCreators.g.Boolean_set_true)!;
     state = reducer(state, actionCreators.h.Array_push("h"))!;
     state = reducer(state, actionCreators.i.Object_set_property("a", 1))!;
+    state = reducer(state, actionCreators.i.Object_merge({ a: 2 }))!;
     state = reducer(state, actionCreators.j.Boolean_set_false)!;
 
     // Then
@@ -261,7 +262,7 @@ describe("Redux components", () => {
       f: "f",
       g: true,
       h: ["h"],
-      i: { a: 1 },
+      i: { a: 2 },
       j: false,
     });
 
