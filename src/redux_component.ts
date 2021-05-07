@@ -133,20 +133,25 @@ type SetAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
   value: StateValue;
 }>;
 
-type ActionCreatorsForAny<StateKey, StateValue, ActionPrefix extends string> = {
-  [x in `Map${Extract<StateKey, string>}`]: (
+type ActionCreatorsForAny<
+  ActionCreatorKey,
+  StateKey,
+  StateValue,
+  ActionPrefix extends string
+> = {
+  [x in `Map${Extract<ActionCreatorKey, string>}`]: (
     mapper: MapAction<StateKey, StateValue, ActionPrefix>["mapper"]
   ) => MapAction<StateKey, StateValue, ActionPrefix>;
 } &
   {
-    [x in `Set${Extract<StateKey, string>}`]: (
+    [x in `Set${Extract<ActionCreatorKey, string>}`]: (
       value: StateValue
     ) => SetAction<StateKey, StateValue, ActionPrefix>;
   } &
   /** Only support delete action if the state value can be undefined */
   (undefined extends StateValue
     ? {
-        [x in `Delete${Extract<StateKey, string>}`]: DeleteAction<
+        [x in `Delete${Extract<ActionCreatorKey, string>}`]: DeleteAction<
           StateKey,
           ActionPrefix
         >;
@@ -154,67 +159,73 @@ type ActionCreatorsForAny<StateKey, StateValue, ActionPrefix extends string> = {
     : {});
 
 type ActionCreatorsForArray<
+  ActionCreatorKey,
   StateKey,
   StateValue extends CompatibleArray<unknown>,
   ActionPrefix extends string
 > = {
-  [x in `Array_push${Extract<StateKey, string>}`]: (
+  [x in `Array_push${Extract<ActionCreatorKey, string>}`]: (
     value: StateValue[number]
   ) => ArrayPushAction<StateKey, StateValue, ActionPrefix>;
 } &
   {
-    [x in `Array_remove${Extract<StateKey, string>}`]: (
+    [x in `Array_remove${Extract<ActionCreatorKey, string>}`]: (
       args: ArrayRemoveAction_Arguments<StateValue[number]>
     ) => ArrayRemoveAction<StateKey, StateValue, ActionPrefix>;
   } &
   {
-    [x in `Array_replace${Extract<StateKey, string>}`]: (
+    [x in `Array_replace${Extract<ActionCreatorKey, string>}`]: (
       args: ArrayReplaceAction_Arguments<StateValue[number]>
     ) => ArrayReplaceAction<StateKey, StateValue, ActionPrefix>;
   } &
   {
-    [x in `Array_unshift${Extract<StateKey, string>}`]: (
+    [x in `Array_unshift${Extract<ActionCreatorKey, string>}`]: (
       value: StateValue[number]
     ) => ArrayUnshiftAction<StateKey, StateValue, ActionPrefix>;
   };
 
-type ActionCreatorsForBoolean<StateKey, ActionPrefix extends string> = {
-  [x in `Boolean_set_false${Extract<StateKey, string>}`]: BooleanSetFalseAction<
-    StateKey,
-    ActionPrefix
-  >;
+type ActionCreatorsForBoolean<
+  ActionCreatorKey,
+  StateKey,
+  ActionPrefix extends string
+> = {
+  [x in `Boolean_set_false${Extract<
+    ActionCreatorKey,
+    string
+  >}`]: BooleanSetFalseAction<StateKey, ActionPrefix>;
 } &
   {
-    [x in `Boolean_set_true${Extract<StateKey, string>}`]: BooleanSetTrueAction<
-      StateKey,
-      ActionPrefix
-    >;
+    [x in `Boolean_set_true${Extract<
+      ActionCreatorKey,
+      string
+    >}`]: BooleanSetTrueAction<StateKey, ActionPrefix>;
   } &
   {
-    [x in `Boolean_toggle${Extract<StateKey, string>}`]: BooleanToggleAction<
-      StateKey,
-      ActionPrefix
-    >;
+    [x in `Boolean_toggle${Extract<
+      ActionCreatorKey,
+      string
+    >}`]: BooleanToggleAction<StateKey, ActionPrefix>;
   };
 
 type ActionCreatorsForObject<
+  ActionCreatorKey,
   StateKey,
   StateValue extends CompatibleObject<string, unknown>,
   ActionPrefix extends string
 > = {
-  [x in `Object_delete_property${Extract<StateKey, string>}`]: <
+  [x in `Object_delete_property${Extract<ActionCreatorKey, string>}`]: <
     K extends keyof StateValue
   >(
     key: K
   ) => ObjectDeletePropertyAction<StateKey, StateValue, ActionPrefix>;
 } &
   {
-    [x in `Object_merge${Extract<StateKey, string>}`]: (
+    [x in `Object_merge${Extract<ActionCreatorKey, string>}`]: (
       obj: Partial<StateValue>
     ) => ObjectMergeAction<StateKey, StateValue, ActionPrefix>;
   } &
   {
-    [x in `Object_set_property${Extract<StateKey, string>}`]: <
+    [x in `Object_set_property${Extract<ActionCreatorKey, string>}`]: <
       K extends keyof StateValue
     >(
       key: K,
@@ -223,27 +234,39 @@ type ActionCreatorsForObject<
   };
 
 type SupportedActionCreators<
+  ActionCreatorKey,
+  StateKey,
   StateValue,
   ActionPrefix extends string
 > = StateValue extends CompatibleArray<any>
-  ? ActionCreatorsForArray<"", StateValue, ActionPrefix>
+  ? ActionCreatorsForArray<ActionCreatorKey, StateKey, StateValue, ActionPrefix>
   : StateValue extends boolean
-  ? ActionCreatorsForBoolean<"", ActionPrefix>
+  ? ActionCreatorsForBoolean<ActionCreatorKey, StateKey, ActionPrefix>
   : StateValue extends CompatibleObject<string, unknown>
-  ? ActionCreatorsForObject<"", StateValue, ActionPrefix>
+  ? ActionCreatorsForObject<
+      ActionCreatorKey,
+      StateKey,
+      StateValue,
+      ActionPrefix
+    >
   : {};
 
-type ActionCreatorForWholeState<
+type BulkActionCreator<
   State,
   ActionPrefix extends string,
   Suggestion extends TypeSuggestion<State> | undefined
 > = Required<
   {
-    [Key in keyof State]: ActionCreatorsForAny<"", State[Key], ActionPrefix> &
+    [Key in keyof State]: ActionCreatorsForAny<
+      "",
+      Key,
+      State[Key],
+      ActionPrefix
+    > &
       (Suggestion extends undefined
-        ? SupportedActionCreators<State[Key], ActionPrefix>
+        ? SupportedActionCreators<"", Key, State[Key], ActionPrefix>
         : State[Key] extends Neverable<infer StateValue>
-        ? SupportedActionCreators<StateValue, ActionPrefix>
+        ? SupportedActionCreators<"", Key, StateValue, ActionPrefix>
         : {});
   }
 >;
@@ -285,6 +308,7 @@ type StatePropertyHelper<
       ? StateValue extends CompatibleArray<unknown>
         ? ActionCreatorsForArray<
             `_${Extract<StateKey, string>}`,
+            StateKey,
             StateValue,
             ActionPrefix
           >
@@ -294,6 +318,7 @@ type StatePropertyHelper<
         ? StateValue extends boolean
           ? ActionCreatorsForBoolean<
               `_${Extract<StateKey, string>}`,
+              StateKey,
               ActionPrefix
             >
           : {}
@@ -302,6 +327,7 @@ type StatePropertyHelper<
         ? StateValue extends CompatibleObject<string, unknown>
           ? ActionCreatorsForObject<
               `_${Extract<StateKey, string>}`,
+              StateKey,
               StateValue,
               ActionPrefix
             >
@@ -309,6 +335,7 @@ type StatePropertyHelper<
         : {}) &
       ActionCreatorsForAny<
         `_${Extract<StateKey, string>}`,
+        StateKey,
         State[StateKey],
         ActionPrefix
       >
@@ -628,7 +655,7 @@ export function createBulkReduxComponents<State, ActionPrefix extends string>({
   state,
   typeSuggestions = {} as any,
 }: CreateBulkReduxComponentsArguments<State, ActionPrefix>): Readonly<{
-  actionCreators: ActionCreatorForWholeState<
+  actionCreators: BulkActionCreator<
     State,
     ActionPrefix,
     CreateBulkReduxComponentsArguments<State, ActionPrefix>["typeSuggestions"]

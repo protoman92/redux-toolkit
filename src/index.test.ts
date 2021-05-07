@@ -213,7 +213,7 @@ describe("Redux components", () => {
     expect(state?.property).toEqual({ b: 100 });
   });
 
-  it("Redux components for state object should work correctly", async () => {
+  it("Bulk redux components for should work correctly", async () => {
     // Setup
     interface State {
       a: number[];
@@ -277,7 +277,7 @@ describe("Redux components", () => {
     expect(actionCreators).toMatchSnapshot();
   });
 
-  it("Redux components with all eligible state values should not require type suggestions", () => {
+  it("Bulk redux components with all eligible state values should not require type suggestions", () => {
     interface State {
       a: number[];
       b: boolean;
@@ -288,6 +288,77 @@ describe("Redux components", () => {
       state: { a: [], b: false, c: {} },
       actionPrefix: "PREFIX",
     });
+  });
+
+  it("Action creator types should be correct", () => {
+    // Setup
+    interface State {
+      a?: number[];
+      b?: boolean;
+      c?: { a: number };
+    }
+
+    const defaultState: State = { a: [], b: false, c: { a: 0 } };
+
+    const { actionCreators } = createBulkReduxComponents<
+      typeof defaultState,
+      "PREFIX"
+    >({
+      actionPrefix: "PREFIX",
+      state: defaultState,
+      typeSuggestions: { a: "ARRAY", b: "BOOLEAN", c: "OBJECT" },
+    });
+
+    function reduce(state: State, action: ActionType<typeof actionCreators>) {
+      switch (action.type) {
+        case "PREFIX_array_push_a":
+        case "PREFIX_array_remove_a":
+        case "PREFIX_array_replace_a":
+        case "PREFIX_array_unshift_a":
+        case "PREFIX_boolean_set_false_b":
+        case "PREFIX_boolean_set_true_b":
+        case "PREFIX_boolean_toggle_b":
+        case "PREFIX_object_delete_property_c":
+        case "PREFIX_object_merge_c":
+        case "PREFIX_object_set_property_c":
+        case "PREFIX_delete_a":
+        case "PREFIX_delete_b":
+        case "PREFIX_delete_c":
+        case "PREFIX_map_a":
+        case "PREFIX_map_b":
+        case "PREFIX_map_c":
+        case "PREFIX_set_a":
+        case "PREFIX_set_b":
+        case "PREFIX_set_c":
+          state!.a;
+          return state;
+      }
+    }
+
+    // When
+    const mapFN = <T>(args: T) => args;
+    let s = reduce(defaultState, actionCreators.a.Array_push(0));
+    s = reduce(s, actionCreators.a.Array_remove({ index: 0 }));
+    s = reduce(s, actionCreators.a.Array_replace({ index: 0, value: 0 }));
+    s = reduce(s, actionCreators.a.Array_unshift(0));
+    s = reduce(s, actionCreators.a.Delete);
+    s = reduce(s, actionCreators.a.Map(mapFN));
+    s = reduce(s, actionCreators.a.Set([]));
+    s = reduce(s, actionCreators.b.Boolean_set_false);
+    s = reduce(s, actionCreators.b.Boolean_set_true);
+    s = reduce(s, actionCreators.b.Boolean_toggle);
+    s = reduce(s, actionCreators.b.Delete);
+    s = reduce(s, actionCreators.b.Map(mapFN));
+    s = reduce(s, actionCreators.b.Set(undefined));
+    s = reduce(s, actionCreators.c.Object_delete_property("a"));
+    s = reduce(s, actionCreators.c.Object_merge({}));
+    s = reduce(s, actionCreators.c.Object_set_property("a", 1));
+    s = reduce(s, actionCreators.c.Delete);
+    s = reduce(s, actionCreators.c.Map(mapFN));
+    s = reduce(s, actionCreators.c.Set(undefined));
+
+    // Then
+    expect(s).toBeDefined();
   });
 
   it("Combining reducers should work", () => {

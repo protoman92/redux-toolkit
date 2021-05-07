@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Redux components Redux components for state object should work correctly 1`] = `
+exports[`Redux components Bulk redux components for should work correctly 1`] = `
 Object {
   "a": Object {
     "Array_push": [Function],
