@@ -117,13 +117,15 @@ The undo component creator helps you wrap an existing reducer to provide it with
 undo functionalities.
 
 ```javascript
+/** 
+ * The State type needs to implement a certain interface to make the history
+ * object available to access.
+ */
 const {
   actionCreators,
   reducer: reducerWithHistory
-} = createUndoReduxComponents<State, 'PREFIX', 'a' | 'b'>({
-  actionPrefix: 'PREFIX',
-  /** The key to keep track of the history in state. Defaults to 'history' */
-  historyKey: 'history',
+} = createUndoReduxComponents<State, 'PREFIX'>({
+  actionPrefix: 'PREFIX' as const,
   /** Track only certain keys in the state object */
   keysToTrack: ['a', 'b'],
   /** Keep a maximum of 5 past states */

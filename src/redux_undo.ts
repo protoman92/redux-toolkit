@@ -6,22 +6,13 @@ export interface UndoActionCreators<ActionPrefix extends string> {
   readonly undo: Readonly<{ type: `${ActionPrefix}_undo` }>;
 }
 
-interface History<StateToTrack = object> {
+export interface ReduxHistory<StateToTrack = object> {
   readonly past: readonly StateToTrack[];
 }
 
-export type StateWithHistory<
-  HistoryKey extends string = "history",
-  StateToTrack = object
-> = Readonly<
-  {
-    [Key in HistoryKey]?: History<StateToTrack>;
-  }
->;
-
-type HistoryKeyForState<S> = S extends StateWithHistory<infer Key, any>
-  ? Key
-  : never;
+export type StateWithHistory<StateToTrack = object> = Readonly<{
+  history?: ReduxHistory<StateToTrack>;
+}>;
 
 function createUndoActionType<ActionPrefix extends string>(
   actionPrefix: ActionPrefix
@@ -41,13 +32,11 @@ export function createUndoReduxComponents<
   KeysToTrack extends keyof State = keyof State
 >({
   actionPrefix,
-  historyKey = "history" as HistoryKeyForState<State>,
   keysToTrack,
   limit = Infinity,
   originalReducer,
 }: Readonly<{
   actionPrefix: ActionPrefix;
-  historyKey?: HistoryKeyForState<State>;
   keysToTrack: readonly KeysToTrack[];
   limit?: number;
   originalReducer: ReducerWithOptionalReturn<State, Action>;
@@ -56,12 +45,12 @@ export function createUndoReduxComponents<
   reducer: ReducerWithOptionalReturn<State, Action>;
 }> {
   const undoActionType = createUndoActionType(actionPrefix);
-  const defaultHistory = { past: [] } as History;
+  const defaultHistory = { past: [] } as ReduxHistory;
 
   return {
     actionCreators: createUndoReduxActionCreators({ actionPrefix }),
     reducer: (state, action) => {
-      const history = state[historyKey] ?? defaultHistory;
+      const history = state.history ?? defaultHistory;
 
       switch (action.type) {
         case undoActionType:
@@ -76,7 +65,7 @@ export function createUndoReduxComponents<
           return {
             ...state,
             ...lastPast,
-            [historyKey]: { ...history, past: pastClone },
+            history: { ...history, past: pastClone },
           };
 
         default: {
@@ -95,7 +84,7 @@ export function createUndoReduxComponents<
           const pastClone = [...history.past];
           pastClone.push(newPast);
           if (pastClone.length > limit) pastClone.splice(0, 1);
-          return { ...newState, [historyKey]: { ...history, past: pastClone } };
+          return { ...newState, history: { ...history, past: pastClone } };
         }
       }
     },
