@@ -128,6 +128,11 @@ const {
   limit: 5,
   originalReducer: (state, action) => state 
 });
+
+/** Restore the last state in the past history */
+dispatch(actionCreators.undo);
+dispatch(actionCreators.undo);
+dispatch(actionCreators.undo);
 ```
 
 The past histories are not shared across reducers, so it's possible to compose
