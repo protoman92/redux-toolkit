@@ -3,6 +3,7 @@ import {
   combineReducers,
   createBulkReduxComponents,
   createReduxComponents,
+  createUndoReduxComponents,
 } from ".";
 
 describe("Redux components", () => {
@@ -376,6 +377,120 @@ describe("Redux components", () => {
     // When && Then
     expect(combined(undefined, { type: "T1" })).toEqual({ property: "1" });
     expect(combined(undefined, { type: "T2" })).toEqual({ property: "0" });
+  });
+});
+
+describe("Redux undo components", () => {
+  it("Undo actions should work correctly", () => {
+    // Setup
+    interface State {
+      a?: number;
+      b?: number;
+      c?: number;
+    }
+
+    const defaultState: State = { a: 0, b: 0, c: 0 };
+
+    const { actionCreators, reducer } = createBulkReduxComponents<
+      State,
+      "PREFIX"
+    >({ actionPrefix: "PREFIX", state: defaultState });
+
+    const {
+      _getPast: getPast,
+      actionCreators: undoActionCreators,
+      reducer: reducerWithHistory,
+    } = createUndoReduxComponents<State, "PREFIX", "a" | "b">({
+      actionPrefix: "PREFIX" as const,
+      keysToTrack: ["a", "b"],
+      limit: 10,
+      originalReducer: reducer,
+    });
+
+    // When && Then
+    let state: State = {};
+    state = reducerWithHistory(state, actionCreators.c.Set(0))!;
+    state = reducerWithHistory(state, actionCreators.c.Set(1))!;
+    state = reducerWithHistory(state, actionCreators.a.Set(1))!;
+    state = reducerWithHistory(state, actionCreators.b.Set(2))!;
+    state = reducerWithHistory(state, actionCreators.c.Set(3))!;
+    state = reducerWithHistory(state, actionCreators.c.Set(4))!;
+    expect(state).toMatchSnapshot();
+    expect(getPast()).toMatchSnapshot();
+
+    // When && Then
+    state = reducerWithHistory(state, undoActionCreators.undo)!;
+    state = reducerWithHistory(state, undoActionCreators.undo)!;
+    expect(state).toMatchSnapshot();
+    expect(getPast()).toMatchSnapshot();
+  });
+
+  it("Past state should respect limit", () => {
+    // Setup
+    interface State {
+      a?: number;
+      b?: number;
+      c?: number;
+    }
+
+    const defaultState: State = { a: 0, b: 0, c: 0 };
+
+    const { actionCreators, reducer } = createBulkReduxComponents<
+      State,
+      "PREFIX"
+    >({ actionPrefix: "PREFIX", state: defaultState });
+
+    const {
+      _getPast: getPast,
+      reducer: reducerWithHistory,
+    } = createUndoReduxComponents<State, "PREFIX", "a" | "b">({
+      actionPrefix: "PREFIX" as const,
+      keysToTrack: ["a", "b"],
+      limit: 1,
+      originalReducer: reducer,
+    });
+
+    // When
+    let state: State = {};
+    state = reducerWithHistory(state, actionCreators.a.Set(1))!;
+    state = reducerWithHistory(state, actionCreators.b.Set(2))!;
+    state = reducerWithHistory(state, actionCreators.c.Set(3))!;
+
+    // Then
+    expect(state).toMatchSnapshot();
+    expect(getPast()).toMatchSnapshot();
+    expect(getPast()).toHaveLength(1);
+  });
+
+  it("Undo action should not do anything if there's no past", () => {
+    // Setup
+    interface State {
+      a?: number;
+    }
+
+    const {
+      actionCreators,
+      reducer: reducerWithHistory,
+    } = createUndoReduxComponents<State, "PREFIX", "a">({
+      actionPrefix: "PREFIX" as const,
+      keysToTrack: ["a"],
+      originalReducer: (...[, action]) => {
+        switch (action.type) {
+          case "UNDEFINED":
+            return undefined;
+
+          default:
+            return {};
+        }
+      },
+    });
+
+    // When && Then
+    let state: State = {};
+    state = reducerWithHistory(state, actionCreators.undo)!;
+    expect(state).toBeUndefined();
+    state = reducerWithHistory(state, { type: "UNDEFINED" })!;
+    expect(state).toBeUndefined();
   });
 });
 

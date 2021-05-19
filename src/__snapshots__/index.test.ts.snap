@@ -118,3 +118,62 @@ Object {
   },
 }
 `;
+
+exports[`Redux undo components Past state should respect limit 1`] = `
+Object {
+  "a": 1,
+  "b": 2,
+  "c": 3,
+}
+`;
+
+exports[`Redux undo components Past state should respect limit 2`] = `
+Array [
+  Object {
+    "a": 1,
+    "b": 2,
+  },
+]
+`;
+
+exports[`Redux undo components Undo actions should work correctly 1`] = `
+Object {
+  "a": 1,
+  "b": 2,
+  "c": 4,
+}
+`;
+
+exports[`Redux undo components Undo actions should work correctly 2`] = `
+Array [
+  Object {
+    "a": undefined,
+    "b": undefined,
+  },
+  Object {
+    "a": 1,
+    "b": undefined,
+  },
+  Object {
+    "a": 1,
+    "b": 2,
+  },
+]
+`;
+
+exports[`Redux undo components Undo actions should work correctly 3`] = `
+Object {
+  "a": 1,
+  "b": undefined,
+  "c": 4,
+}
+`;
+
+exports[`Redux undo components Undo actions should work correctly 4`] = `
+Array [
+  Object {
+    "a": undefined,
+    "b": undefined,
+  },
+]
+`;

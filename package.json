@@ -1,14 +1,14 @@
 {
   "author": "Hai Pham <swiften.svc@gmail.com",
-  "dependencies": {},
   "devDependencies": {
     "@types/jest": "*",
+    "@wordpress/is-shallow-equal": "*",
     "coveralls": "*",
     "jest": "*",
     "redux": "*",
     "rxjs": "*",
-    "ts-jest": "*",
     "ts-essentials": "*",
+    "ts-jest": "*",
     "typescript": "*",
     "webpack": "*",
     "webpack-cli": "*",
@@ -17,12 +17,14 @@
   "license": "MIT",
   "name": "redux-toolkit",
   "peerDependencies": {
+    "@wordpress/is-shallow-equal": "*",
     "redux": "*",
     "rxjs": "*"
   },
   "repository": "https://github.com/protoman92/javascript-helper.git",
   "resolutions": {
     "@types/jest": "26.0.20",
+    "@wordpress/is-shallow-equal": "4.0.0",
     "coveralls": "3.1.0",
     "jest": "26.6.0",
     "redux": "4.0.5",

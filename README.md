@@ -111,6 +111,29 @@ actionCreators.b.Boolean_set_true;
 actionCreators.c.Boolean_set_false;
 ```
 
+## Redux undo component creator
+
+The undo component creator helps you wrap an existing reducer to provide it with
+undo functionalities.
+
+```javascript
+const {
+  actionCreators,
+  reducer: reducerWithHistory
+} = createUndoReduxComponents<State, 'PREFIX', 'a' | 'b'>({
+  actionPrefix: 'PREFIX',
+  /** Track only certain keys in the state object */
+  keysToTrack: ['a', 'b'],
+  /** Keep a maximum of 5 past states */
+  limit: 5,
+  originalReducer: (state, action) => state 
+});
+```
+
+The past histories are not shared across reducers, so it's possible to compose
+different reducers together with different pasts. If a past history runs out of
+pasts, it will yield and allow other reducers to attempt the undo.
+
 ## RxJS helpers
 
 For an introduction to **RxJS**, please visit their [page](https://github.com/ReactiveX/rxjs).
