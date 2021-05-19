@@ -1,8 +1,10 @@
 {
   "author": "Hai Pham <swiften.svc@gmail.com",
+  "dependencies": {
+    "@wordpress/is-shallow-equal": "*"
+  },
   "devDependencies": {
     "@types/jest": "*",
-    "@wordpress/is-shallow-equal": "*",
     "coveralls": "*",
     "jest": "*",
     "redux": "*",

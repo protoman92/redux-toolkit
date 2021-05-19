@@ -2,6 +2,22 @@ import isShallowEqual from "@wordpress/is-shallow-equal";
 import { Action } from "redux";
 import { ReducerWithOptionalReturn } from "./reducer";
 
+export interface UndoActionCreators<ActionPrefix extends string> {
+  readonly undo: Readonly<{ type: `${ActionPrefix}_undo` }>;
+}
+
+function createUndoActionType<ActionPrefix extends string>(
+  actionPrefix: ActionPrefix
+): `${ActionPrefix}_undo` {
+  return `${actionPrefix}_undo` as const;
+}
+
+export function createUndoReduxActionCreators<ActionPrefix extends string>({
+  actionPrefix,
+}: Readonly<{ actionPrefix: ActionPrefix }>): UndoActionCreators<ActionPrefix> {
+  return { undo: { type: createUndoActionType(actionPrefix) } };
+}
+
 export function createUndoReduxComponents<
   State,
   ActionPrefix extends string,
@@ -19,19 +35,15 @@ export function createUndoReduxComponents<
 }>): Readonly<{
   /** Internal API, please avoid using */
   _getPast: () => readonly Pick<State, StateKey>[];
-  actionCreators: Readonly<{
-    undo: Readonly<{ type: `${ActionPrefix}_undo` }>;
-  }>;
+  actionCreators: UndoActionCreators<ActionPrefix>;
   reducer: ReducerWithOptionalReturn<State, Action>;
 }> {
-  const undoActionType = `${actionPrefix}_undo` as const;
+  const undoActionType = createUndoActionType(actionPrefix);
   const past: Pick<State, StateKey>[] = [];
 
   return {
     _getPast: () => [...past],
-    actionCreators: {
-      undo: { type: undoActionType },
-    },
+    actionCreators: createUndoReduxActionCreators({ actionPrefix }),
     reducer: (state, action) => {
       switch (action.type) {
         case undoActionType:
