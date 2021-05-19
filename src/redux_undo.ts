@@ -6,6 +6,23 @@ export interface UndoActionCreators<ActionPrefix extends string> {
   readonly undo: Readonly<{ type: `${ActionPrefix}_undo` }>;
 }
 
+interface History<StateToTrack = object> {
+  readonly past: readonly StateToTrack[];
+}
+
+export type StateWithHistory<
+  HistoryKey extends string = "history",
+  StateToTrack = object
+> = Readonly<
+  {
+    [Key in HistoryKey]?: History<StateToTrack>;
+  }
+>;
+
+type HistoryKeyForState<S> = S extends StateWithHistory<infer Key, any>
+  ? Key
+  : never;
+
 function createUndoActionType<ActionPrefix extends string>(
   actionPrefix: ActionPrefix
 ): `${ActionPrefix}_undo` {
@@ -19,57 +36,66 @@ export function createUndoReduxActionCreators<ActionPrefix extends string>({
 }
 
 export function createUndoReduxComponents<
-  State,
+  State extends StateWithHistory,
   ActionPrefix extends string,
-  StateKey extends keyof State = keyof State
+  KeysToTrack extends keyof State = keyof State
 >({
   actionPrefix,
+  historyKey = "history" as HistoryKeyForState<State>,
   keysToTrack,
   limit = Infinity,
   originalReducer,
 }: Readonly<{
   actionPrefix: ActionPrefix;
-  keysToTrack: readonly StateKey[];
+  historyKey?: HistoryKeyForState<State>;
+  keysToTrack: readonly KeysToTrack[];
   limit?: number;
   originalReducer: ReducerWithOptionalReturn<State, Action>;
 }>): Readonly<{
-  /** Internal API, please avoid using */
-  _getPast: () => readonly Pick<State, StateKey>[];
   actionCreators: UndoActionCreators<ActionPrefix>;
   reducer: ReducerWithOptionalReturn<State, Action>;
 }> {
   const undoActionType = createUndoActionType(actionPrefix);
-  const past: Pick<State, StateKey>[] = [];
+  const defaultHistory = { past: [] } as History;
 
   return {
-    _getPast: () => [...past],
     actionCreators: createUndoReduxActionCreators({ actionPrefix }),
     reducer: (state, action) => {
+      const history = state[historyKey] ?? defaultHistory;
+
       switch (action.type) {
         case undoActionType:
           /**
            * If this past has been exhausted, yield so that other pasts can
            * have a go.
            */
-          if (past.length === 0) return undefined;
-          const [lastPast] = past.splice(past.length - 1, 1);
-          return { ...state, ...lastPast };
+          if (history.past.length === 0) return undefined;
+          const pastClone = [...history.past];
+          const [lastPast] = pastClone.splice(history.past.length - 1, 1);
+
+          return {
+            ...state,
+            ...lastPast,
+            [historyKey]: { ...history, past: pastClone },
+          };
 
         default: {
           const newState = originalReducer(state, action);
           if (newState == null) return undefined;
-          const newPast: Partial<Pick<State, StateKey>> = {};
+          const newPast: Partial<Pick<State, KeysToTrack>> = {};
 
           for (const keyToTrack of keysToTrack) {
             newPast[keyToTrack] = state[keyToTrack];
           }
 
-          if (!isShallowEqual(newPast, past[past.length - 1])) {
-            past.push(newPast as typeof past[number]);
+          if (isShallowEqual(newPast, history.past[history.past.length - 1])) {
+            return newState;
           }
 
-          if (past.length > limit) past.splice(0, 1);
-          return newState;
+          const pastClone = [...history.past];
+          pastClone.push(newPast);
+          if (pastClone.length > limit) pastClone.splice(0, 1);
+          return { ...newState, [historyKey]: { ...history, past: pastClone } };
         }
       }
     },

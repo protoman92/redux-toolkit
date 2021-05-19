@@ -5,6 +5,7 @@ import {
   createReduxComponents,
   createUndoReduxComponents,
 } from ".";
+import { StateWithHistory } from "./redux_undo";
 
 describe("Redux components", () => {
   it("Basic redux components should work correctly", async () => {
@@ -383,7 +384,8 @@ describe("Redux components", () => {
 describe("Redux undo components", () => {
   it("Undo actions should work correctly", () => {
     // Setup
-    interface State {
+
+    interface State extends StateWithHistory {
       a?: number;
       b?: number;
       c?: number;
@@ -397,7 +399,6 @@ describe("Redux undo components", () => {
     >({ actionPrefix: "PREFIX", state: defaultState });
 
     const {
-      _getPast: getPast,
       actionCreators: undoActionCreators,
       reducer: reducerWithHistory,
     } = createUndoReduxComponents<State, "PREFIX", "a" | "b">({
@@ -416,18 +417,16 @@ describe("Redux undo components", () => {
     state = reducerWithHistory(state, actionCreators.c.Set(3))!;
     state = reducerWithHistory(state, actionCreators.c.Set(4))!;
     expect(state).toMatchSnapshot();
-    expect(getPast()).toMatchSnapshot();
 
     // When && Then
     state = reducerWithHistory(state, undoActionCreators.undo)!;
     state = reducerWithHistory(state, undoActionCreators.undo)!;
     expect(state).toMatchSnapshot();
-    expect(getPast()).toMatchSnapshot();
   });
 
   it("Past state should respect limit", () => {
     // Setup
-    interface State {
+    interface State extends StateWithHistory {
       a?: number;
       b?: number;
       c?: number;
@@ -440,10 +439,11 @@ describe("Redux undo components", () => {
       "PREFIX"
     >({ actionPrefix: "PREFIX", state: defaultState });
 
-    const {
-      _getPast: getPast,
-      reducer: reducerWithHistory,
-    } = createUndoReduxComponents<State, "PREFIX", "a" | "b">({
+    const { reducer: reducerWithHistory } = createUndoReduxComponents<
+      State,
+      "PREFIX",
+      "a" | "b"
+    >({
       actionPrefix: "PREFIX" as const,
       keysToTrack: ["a", "b"],
       limit: 1,
@@ -458,13 +458,11 @@ describe("Redux undo components", () => {
 
     // Then
     expect(state).toMatchSnapshot();
-    expect(getPast()).toMatchSnapshot();
-    expect(getPast()).toHaveLength(1);
   });
 
   it("Undo action should not do anything if there's no past", () => {
     // Setup
-    interface State {
+    interface State extends StateWithHistory {
       a?: number;
     }
 
@@ -487,9 +485,9 @@ describe("Redux undo components", () => {
 
     // When && Then
     let state: State = {};
-    state = reducerWithHistory(state, actionCreators.undo)!;
+    state = reducerWithHistory({}, actionCreators.undo)!;
     expect(state).toBeUndefined();
-    state = reducerWithHistory(state, { type: "UNDEFINED" })!;
+    state = reducerWithHistory({}, { type: "UNDEFINED" })!;
     expect(state).toBeUndefined();
   });
 });

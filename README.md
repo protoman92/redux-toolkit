@@ -122,6 +122,8 @@ const {
   reducer: reducerWithHistory
 } = createUndoReduxComponents<State, 'PREFIX', 'a' | 'b'>({
   actionPrefix: 'PREFIX',
+  /** The key to keep track of the history in state. Defaults to 'history' */
+  historyKey: 'history',
   /** Track only certain keys in the state object */
   keysToTrack: ['a', 'b'],
   /** Keep a maximum of 5 past states */
@@ -134,10 +136,6 @@ dispatch(actionCreators.undo);
 dispatch(actionCreators.undo);
 dispatch(actionCreators.undo);
 ```
-
-The past histories are not shared across reducers, so it's possible to compose
-different reducers together with different pasts. If a past history runs out of
-pasts, it will yield and allow other reducers to attempt the undo.
 
 ## RxJS helpers
 
