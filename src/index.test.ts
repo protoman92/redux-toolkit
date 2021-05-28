@@ -86,14 +86,6 @@ describe("Redux components", () => {
     state = rc1.reducer(
       state!,
       rc1.actionCreators.Array_replace_property({
-        propertyToCheckEquality: "b",
-        value: { a: "some-value-3", b: "checkable" },
-      })
-    );
-
-    state = rc1.reducer(
-      state!,
-      rc1.actionCreators.Array_replace_property({
         predicate: (...[, index]) => index === 0,
         value: { a: "some-value-4" },
       })
@@ -107,12 +99,13 @@ describe("Redux components", () => {
       })
     );
 
-    /** This should not update, since there is no matching property */
     state = rc1.reducer(
       state!,
       rc1.actionCreators.Array_replace_property({
-        propertyToCheckEquality: "b",
-        value: { a: "some-value-3", b: "unmatchable-1" },
+        index: 2,
+        mapper: (currentValue) => ({
+          a: `${currentValue?.a}${currentValue?.a}`,
+        }),
       })
     );
 
@@ -124,10 +117,16 @@ describe("Redux components", () => {
       } as any)
     );
 
+    /** This should not update, since there is no mapping mechanism provided */
+    state = rc1.reducer(
+      state!,
+      rc1.actionCreators.Array_replace_property({ index: 0 } as any)
+    );
+
     expect(state?.property).toEqual([
       { a: "some-value-4" },
-      { a: "some-value-3", b: "checkable" },
-      { a: "some-value-5" },
+      { a: "some-value-2", b: "checkable" },
+      { a: "some-value-5some-value-5" },
     ]);
 
     // When && Then 3

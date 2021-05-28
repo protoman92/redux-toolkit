@@ -47,16 +47,14 @@ type ArrayRemoveAction<
 >;
 
 type ArrayReplaceAction_Arguments<ArrayElement> = Readonly<
-  { value: ArrayElement } & (
-    | (ArrayRemoveAction_Arguments<ArrayElement> & {
-        propertyToCheckEquality?: undefined;
-      })
+  (
+    | { mapper?: undefined; value: ArrayElement }
     | {
-        index?: undefined;
-        predicate?: undefined;
-        propertyToCheckEquality: keyof ArrayElement;
+        mapper: (currentValue: ArrayElement | undefined) => ArrayElement;
+        value?: undefined;
       }
-  )
+  ) &
+    ArrayRemoveAction_Arguments<ArrayElement>
 >;
 
 type ArrayReplaceAction<
@@ -483,7 +481,7 @@ export function createReduxComponents<
               return undefined;
             },
             (state: State, action: Action) => {
-              let actionValue: any;
+              let elementMapper: ((currentValue: any) => any) | undefined;
               let isRemoveAction = false;
 
               /* istanbul ignore else */
@@ -500,7 +498,11 @@ export function createReduxComponents<
                   `${actionPrefix}_array_replace_${stateKey}`
                 )
               ) {
-                actionValue = action.value;
+                if ("value" in action && action.mapper == null) {
+                  elementMapper = () => action.value;
+                } else {
+                  elementMapper = action.mapper;
+                }
               } else {
                 return undefined;
               }
@@ -516,11 +518,6 @@ export function createReduxComponents<
                 index = action.index;
               } else if (action.predicate != null) {
                 findIndexFn = action.predicate;
-              } else if (action.propertyToCheckEquality != null) {
-                const propertyKey = action.propertyToCheckEquality as string;
-
-                findIndexFn = (currentValue) =>
-                  currentValue[propertyKey] === actionValue[propertyKey];
               }
 
               if (findIndexFn != null) {
@@ -530,8 +527,8 @@ export function createReduxComponents<
               if (index >= 0) {
                 if (isRemoveAction) {
                   arrayState.splice(index, 1);
-                } else {
-                  arrayState[index] = actionValue;
+                } else if (elementMapper != null) {
+                  arrayState[index] = elementMapper(arrayState[index]);
                 }
               }
 
