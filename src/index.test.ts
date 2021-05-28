@@ -94,7 +94,7 @@ describe("Redux components", () => {
     state = rc1.reducer(
       state!,
       rc1.actionCreators.Array_replace_property({
-        index: 2,
+        index: 1,
         value: { a: "some-value-5" },
       })
     );
@@ -102,7 +102,7 @@ describe("Redux components", () => {
     state = rc1.reducer(
       state!,
       rc1.actionCreators.Array_replace_property({
-        index: 2,
+        index: 1,
         mapper: (currentValue) => ({
           a: `${currentValue?.a}${currentValue?.a}`,
         }),
@@ -125,7 +125,6 @@ describe("Redux components", () => {
 
     expect(state?.property).toEqual([
       { a: "some-value-4" },
-      { a: "some-value-2", b: "checkable" },
       { a: "some-value-5some-value-5" },
     ]);
 
@@ -135,13 +134,13 @@ describe("Redux components", () => {
       rc2.actionCreators.Array_remove_property2({ index: 1 })
     );
 
-    expect(state?.property2).toEqual([1, 3]);
-
     /** This should not do anything, since the index is out of bound */
     state = rc2.reducer(
       state!,
       rc2.actionCreators.Array_remove_property2({ index: 10 })
     );
+
+    expect(state?.property2).toEqual([1, 3]);
   });
 
   it("Redux components for boolean state should work correctly", async () => {

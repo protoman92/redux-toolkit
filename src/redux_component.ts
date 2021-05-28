@@ -50,7 +50,7 @@ type ArrayReplaceAction_Arguments<ArrayElement> = Readonly<
   (
     | { mapper?: undefined; value: ArrayElement }
     | {
-        mapper: (currentValue: ArrayElement | undefined) => ArrayElement;
+        mapper: (currentValue: ArrayElement) => ArrayElement;
         value?: undefined;
       }
   ) &
@@ -524,7 +524,7 @@ export function createReduxComponents<
                 index = arrayState.findIndex(findIndexFn);
               }
 
-              if (index >= 0) {
+              if (index >= 0 && index < arrayState.length) {
                 if (isRemoveAction) {
                   arrayState.splice(index, 1);
                 } else if (elementMapper != null) {
