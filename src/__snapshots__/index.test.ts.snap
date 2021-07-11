@@ -58,9 +58,6 @@ Object {
       "type": "PREFIX_delete_f",
     },
     "Map": [Function],
-    "Object_delete_property": [Function],
-    "Object_merge": [Function],
-    "Object_set_property": [Function],
     "Set": [Function],
   },
   "g": Object {
@@ -115,6 +112,24 @@ Object {
     },
     "Map": [Function],
     "Set": [Function],
+  },
+  "k": Object {
+    "Delete": Object {
+      "type": "PREFIX_delete_k",
+    },
+    "Map": [Function],
+    "Set": [Function],
+    "Set_add": [Function],
+    "Set_delete": [Function],
+  },
+  "l": Object {
+    "Delete": Object {
+      "type": "PREFIX_delete_l",
+    },
+    "Map": [Function],
+    "Set": [Function],
+    "Set_add": [Function],
+    "Set_delete": [Function],
   },
 }
 `;

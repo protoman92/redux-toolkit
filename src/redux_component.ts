@@ -6,6 +6,7 @@ import { shallowCloneArray } from "./utils";
 const TYPE_PROPERTY_ARRAY = "ARRAY";
 const TYPE_PROPERTY_BOOLEAN = "BOOLEAN";
 const TYPE_PROPERTY_OBJECT = "OBJECT";
+const TYPE_PROPERTY_SET = "SET";
 
 type Neverable<T> = T | null | undefined;
 type CompatibleArray<T> = T[] | readonly T[];
@@ -14,7 +15,8 @@ type CompatibleObject<K extends string, V> = { [x in Extract<K, string>]: V };
 type SupportedTypes =
   | CompatibleArray<unknown>
   | boolean
-  | CompatibleObject<string, unknown>;
+  | CompatibleObject<string, unknown>
+  | Set<unknown>;
 
 type ArrayPushAction<
   StateKey,
@@ -26,10 +28,7 @@ type ArrayPushAction<
 }>;
 
 type ArrayRemoveAction_Arguments<ArrayElement> = Readonly<
-  | {
-      index: number;
-      predicate?: undefined;
-    }
+  | { index: number; predicate?: undefined }
   | {
       index?: undefined;
       predicate: (currentValue: ArrayElement, index: number) => boolean;
@@ -120,6 +119,30 @@ type ObjectSetPropertyAction<
   type: `${ActionPrefix}_object_set_property_${Extract<StateKey, string>}`;
   value: StateValue[keyof StateValue];
 }>;
+
+type SetAddAction<
+  StateKey,
+  StateValue extends Set<unknown>,
+  ActionPrefix extends string
+> = Readonly<{
+  type: `${ActionPrefix}_set_add_${Extract<StateKey, string>}`;
+  value: Parameters<StateValue["has"]>[0];
+}>;
+
+type SetDeleteAction_Arguments<SetElement> = Readonly<
+  | { element: SetElement; predicate?: undefined }
+  | { element?: undefined; predicate: (currentValue: SetElement) => boolean }
+>;
+
+type SetDeleteAction<
+  StateKey,
+  StateValue extends Set<unknown>,
+  ActionPrefix extends string
+> = Readonly<
+  {
+    type: `${ActionPrefix}_set_delete_${Extract<StateKey, string>}`;
+  } & SetDeleteAction_Arguments<Parameters<StateValue["has"]>[0]>
+>;
 
 type MapAction<StateKey, StateValue, ActionPrefix extends string> = Readonly<{
   mapper: (current: StateValue) => StateValue;
@@ -231,6 +254,22 @@ type ActionCreatorsForObject<
     ) => ObjectSetPropertyAction<StateKey, StateValue, ActionPrefix>;
   };
 
+type ActionCreatorsForSet<
+  ActionCreatorKey,
+  StateKey,
+  StateValue extends Set<unknown>,
+  ActionPrefix extends string
+> = {
+  [x in `Set_add${Extract<ActionCreatorKey, string>}`]: (
+    value: Parameters<StateValue["has"]>[0]
+  ) => SetAddAction<StateKey, StateValue, ActionPrefix>;
+} &
+  {
+    [x in `Set_delete${Extract<ActionCreatorKey, string>}`]: (
+      args: SetDeleteAction_Arguments<Parameters<StateValue["has"]>[0]>
+    ) => SetDeleteAction<StateKey, StateValue, ActionPrefix>;
+  };
+
 type SupportedActionCreators<
   ActionCreatorKey,
   StateKey,
@@ -247,6 +286,8 @@ type SupportedActionCreators<
       StateValue,
       ActionPrefix
     >
+  : StateValue extends Set<unknown>
+  ? ActionCreatorsForSet<ActionCreatorKey, StateKey, StateValue, ActionPrefix>
   : {};
 
 type BulkActionCreator<
@@ -292,6 +333,8 @@ type TypeSuggestion<State> = {
       ? typeof TYPE_PROPERTY_BOOLEAN
       : StateValue extends CompatibleObject<string, unknown>
       ? typeof TYPE_PROPERTY_OBJECT
+      : StateValue extends Set<unknown>
+      ? typeof TYPE_PROPERTY_SET
       : undefined
     : undefined;
 };
@@ -331,6 +374,16 @@ type StatePropertyHelper<
             >
           : {}
         : {}) &
+      (State[StateKey] extends Neverable<infer StateValue>
+        ? StateValue extends Set<unknown>
+          ? ActionCreatorsForSet<
+              `_${Extract<StateKey, string>}`,
+              StateKey,
+              StateValue,
+              ActionPrefix
+            >
+          : {}
+        : {}) &
       ActionCreatorsForAny<
         `_${Extract<StateKey, string>}`,
         StateKey,
@@ -355,8 +408,14 @@ type CreateReduxComponentsArguments<
     ? { propertyType: typeof TYPE_PROPERTY_BOOLEAN }
     : State[StateKey] extends Neverable<CompatibleObject<string, unknown>>
     ? { propertyType: typeof TYPE_PROPERTY_OBJECT }
+    : State[StateKey] extends Neverable<Set<unknown>>
+    ? { propertyType: typeof TYPE_PROPERTY_SET }
     : { propertyType?: undefined })
 >;
+
+function isObject(obj: any): obj is {} {
+  return Object.prototype.toString.call(obj) === "[object Object]";
+}
 
 function isOfType<T extends { type: string }>(
   obj: Readonly<{ type: string }>,
@@ -441,6 +500,20 @@ export function createReduxComponents<
               value,
               type: `${actionPrefix}_object_set_property_${stateKey}`,
             }),
+          }
+        : {}),
+      ...(propertyType === TYPE_PROPERTY_SET
+        ? {
+            [`Set_add_${stateKey}`]: (
+              value: State[StateKey] extends Set<infer SetElement>
+                ? SetElement
+                : undefined
+            ) => ({ value, type: `${actionPrefix}_set_add_${stateKey}` }),
+            [`Set_delete_${stateKey}`]: (
+              args: State[StateKey] extends Set<infer SetElement>
+                ? SetDeleteAction_Arguments<SetElement>
+                : undefined
+            ) => ({ ...args, type: `${actionPrefix}_set_delete_${stateKey}` }),
           }
         : {}),
       [`Delete_${stateKey}`]: { type: `${actionPrefix}_delete_${stateKey}` },
@@ -603,6 +676,49 @@ export function createReduxComponents<
             },
           ]
         : []),
+      ...(propertyType === TYPE_PROPERTY_SET
+        ? [
+            (state: State, action: Action) => {
+              if (
+                isOfType<SetAddAction<State, Set<unknown>, ActionPrefix>>(
+                  action,
+                  `${actionPrefix}_set_add_${stateKey}`
+                )
+              ) {
+                const setState = new Set(state[stateKey] as any);
+                setState.add(action.value);
+                return { ...state, [stateKey]: setState };
+              }
+
+              return undefined;
+            },
+            (state: State, action: Action) => {
+              /* istanbul ignore if */
+              if (
+                !isOfType<
+                  SetDeleteAction<StateKey, Set<unknown>, ActionPrefix>
+                >(action, `${actionPrefix}_set_delete_${stateKey}`)
+              ) {
+                return undefined;
+              }
+
+              const setState = new Set(state[stateKey] as any);
+
+              /* istanbul ignore else */
+              if (action.element != null) {
+                setState.delete(action.element);
+              } else if (action.predicate != null) {
+                for (const element of setState) {
+                  if (!action.predicate(element)) continue;
+                  setState.delete(element);
+                  break;
+                }
+              }
+
+              return { ...state, [stateKey]: setState };
+            },
+          ]
+        : []),
       (state: State, action: Action) => {
         if (
           isOfType<SetAction<StateKey, State[StateKey], ActionPrefix>>(
@@ -686,7 +802,7 @@ export function createBulkReduxComponents<State, ActionPrefix extends string>({
     const stateValue = anyState[stateKey];
 
     if (
-      stateValue instanceof Array ||
+      Array.isArray(stateValue) ||
       anyTypeSuggestions[stateKey] === TYPE_PROPERTY_ARRAY
     ) {
       const {
@@ -716,7 +832,22 @@ export function createBulkReduxComponents<State, ActionPrefix extends string>({
       actionCreators[stateKey] = booleanActionCreators;
       reducers.push(booleanReducer);
     } else if (
-      typeof stateValue === "object" ||
+      stateValue instanceof Set ||
+      anyTypeSuggestions[stateKey] === TYPE_PROPERTY_SET
+    ) {
+      const {
+        actionCreators: objectActionCreators,
+        reducer: objectReducer,
+      } = createReduxComponents<State, keyof State, ActionPrefix>({
+        stateKey,
+        actionPrefix,
+        propertyType: "SET",
+      } as any);
+
+      actionCreators[stateKey] = objectActionCreators;
+      reducers.push(objectReducer);
+    } else if (
+      isObject(stateValue) ||
       anyTypeSuggestions[stateKey] === TYPE_PROPERTY_OBJECT
     ) {
       const {

@@ -31,9 +31,9 @@ const PREFIX = "PREFIX" as const;
  * - property1ActionCreators.Object_delete_property_property1
  * - property1ActionCreators.Object_merge_property_property1
  * - property1ActionCreators.Object_set_property_property1
- * Similarly, different property types will have different action creators.
+ * Similarly, different property types (Array|Boolean|Object|Set) will have different action creators.
  * The convention of the generated names is:
- * `${PREFIX}_(Array|Boolean|Object)_(action)_${StateKey}
+ * `${PREFIX}_(Array|Boolean|Object|Set)_(action)_${StateKey}
  */
 const {
   actionCreators: property1ActionCreators,

@@ -213,6 +213,62 @@ describe("Redux components", () => {
     expect(state?.property).toEqual({ b: 100 });
   });
 
+  it("Redux components for set state should work correctly", async () => {
+    // Setup
+    interface State {
+      nonSet?: boolean;
+      property?: Set<{ a: string; b?: string }>;
+      property2: Set<number>;
+    }
+
+    let state: State | undefined = { property2: new Set([1, 2, 3]) };
+
+    const rc1 = createReduxComponents<State, "property", "PREFIX">({
+      actionPrefix: "PREFIX",
+      propertyType: "SET",
+      stateKey: "property",
+    });
+
+    const rc2 = createReduxComponents<State, "property2", "PREFIX">({
+      actionPrefix: "PREFIX",
+      propertyType: "SET",
+      stateKey: "property2",
+    });
+
+    // When && Then 1
+    state = rc1.reducer(
+      state!,
+      rc1.actionCreators.Set_add_property({ a: "some-value-2", b: "checkable" })
+    );
+
+    expect(state?.property).toEqual(
+      new Set([{ a: "some-value-2", b: "checkable" }])
+    );
+
+    // When && Then 2
+
+    // When && Then 2
+    state = rc2.reducer(
+      state!,
+      rc2.actionCreators.Set_delete_property2({ element: 1 })
+    );
+
+    state = rc2.reducer(
+      state!,
+      rc2.actionCreators.Set_delete_property2({
+        predicate: (currentValue) => currentValue === 2,
+      })
+    );
+
+    /** This should not do anything, since there is no matching mechanism provided */
+    state = rc2.reducer(
+      state!,
+      rc2.actionCreators.Set_delete_property2({} as any)
+    );
+
+    expect(state?.property2).toEqual(new Set([3]));
+  });
+
   it("Bulk redux components for should work correctly", async () => {
     // Setup
     interface State {
@@ -226,6 +282,8 @@ describe("Redux components", () => {
       h?: string[] | null;
       i?: { a?: number };
       j?: boolean;
+      k: Set<number>;
+      l?: Set<string> | null;
     }
 
     let state: State | undefined = {
@@ -236,6 +294,7 @@ describe("Redux components", () => {
       e: undefined,
       f: null,
       j: true,
+      k: new Set(),
     };
 
     const { actionCreators, reducer } = createBulkReduxComponents<
@@ -244,7 +303,13 @@ describe("Redux components", () => {
     >({
       state,
       actionPrefix: "PREFIX",
-      typeSuggestions: { g: "BOOLEAN", h: "ARRAY", i: "OBJECT", j: "BOOLEAN" },
+      typeSuggestions: {
+        g: "BOOLEAN",
+        h: "ARRAY",
+        i: "OBJECT",
+        j: "BOOLEAN",
+        l: "SET",
+      },
     });
 
     // When
@@ -259,6 +324,8 @@ describe("Redux components", () => {
     state = reducer(state, actionCreators.i.Object_set_property("a", 1))!;
     state = reducer(state, actionCreators.i.Object_merge({ a: 2 }))!;
     state = reducer(state, actionCreators.j.Boolean_set_false)!;
+    state = reducer(state, actionCreators.k.Set_add(0))!;
+    state = reducer(state, actionCreators.l.Set_add("h"))!;
 
     // Then
     expect(state).toEqual({
@@ -272,6 +339,8 @@ describe("Redux components", () => {
       h: ["h"],
       i: { a: 2 },
       j: false,
+      k: new Set([0]),
+      l: new Set(["h"]),
     });
 
     expect(actionCreators).toMatchSnapshot();
