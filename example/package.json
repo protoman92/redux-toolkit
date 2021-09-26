@@ -40,9 +40,7 @@
   "name": "example",
   "private": true,
   "scripts": {
-    "build": "react-app-rewired build",
-    "start": "react-app-rewired start",
-    "test": "react-app-rewired test"
+    "start": "react-app-rewired start"
   },
   "version": "0.1.0"
 }
